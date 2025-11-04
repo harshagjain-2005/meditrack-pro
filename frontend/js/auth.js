@@ -24,15 +24,9 @@ class AuthManager {
             }
         });
 
-        document.getElementById('confirmPassword')?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.handleRegister();
-            }
-        });
-
         // Logout
         document.getElementById('logoutBtn').addEventListener('click', () => {
-            app.logout();
+            this.handleLogout();
         });
     }
 
@@ -58,6 +52,8 @@ class AuthManager {
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
             btn.disabled = true;
 
+            console.log('🔐 Attempting login...');
+            
             const response = await fetch('http://localhost:5000/api/auth/login', {
                 method: 'POST',
                 headers: {
@@ -67,24 +63,28 @@ class AuthManager {
             });
 
             const data = await response.json();
+            console.log('📨 Login response:', data);
 
             if (data.success) {
-                // Store token and user data
-                localStorage.setItem('meditrack_token', data.token);
+                this.showAuthSuccess('Login successful!');
+                
+                // Store user data in localStorage
                 localStorage.setItem('meditrack_user', JSON.stringify(data.user));
                 
                 // Update app state
-                app.token = data.token;
                 app.currentUser = data.user;
                 
-                // Show dashboard
-                app.showDashboard();
+                // Show dashboard after a short delay
+                setTimeout(() => {
+                    app.showDashboard();
+                }, 1000);
+                
             } else {
                 this.showAuthError(data.message || 'Login failed');
             }
 
         } catch (error) {
-            console.error('Login error:', error);
+            console.error('💥 Login error:', error);
             this.showAuthError('Connection failed. Please check if the server is running.');
         } finally {
             btn.innerHTML = originalText;
@@ -124,6 +124,8 @@ class AuthManager {
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
             btn.disabled = true;
 
+            console.log('📝 Attempting registration...');
+
             const response = await fetch('http://localhost:5000/api/auth/register', {
                 method: 'POST',
                 headers: {
@@ -141,6 +143,7 @@ class AuthManager {
             });
 
             const data = await response.json();
+            console.log('📨 Register response:', data);
 
             if (data.success) {
                 this.showAuthSuccess('Account created successfully! Please login.');
@@ -161,12 +164,20 @@ class AuthManager {
             }
 
         } catch (error) {
-            console.error('Registration error:', error);
+            console.error('💥 Registration error:', error);
             this.showAuthError('Connection failed. Please check if the server is running.');
         } finally {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
+    }
+
+    handleLogout() {
+        localStorage.removeItem('meditrack_user');
+        app.currentUser = null;
+        app.medicines = [];
+        app.showLandingPage();
+        this.showAuthSuccess('Logged out successfully!');
     }
 
     isValidEmail(email) {
@@ -213,7 +224,9 @@ class AuthManager {
 
         // Insert message
         const authBody = document.querySelector('.auth-body');
-        authBody.insertBefore(messageDiv, authBody.firstChild);
+        if (authBody) {
+            authBody.insertBefore(messageDiv, authBody.firstChild);
+        }
 
         // Auto-remove after 5 seconds
         setTimeout(() => {

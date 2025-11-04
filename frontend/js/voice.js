@@ -58,17 +58,6 @@ class VoiceRecorder {
             document.getElementById('startRecordingBtn').disabled = true;
             document.getElementById('stopRecordingBtn').disabled = false;
 
-            // Add pulse animation
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes pulse {
-                    0% { opacity: 1; }
-                    50% { opacity: 0.5; }
-                    100% { opacity: 1; }
-                }
-            `;
-            document.head.appendChild(style);
-
         } catch (error) {
             console.error('Error accessing microphone:', error);
             app.showNotification('Error accessing microphone. Please check permissions.', 'error');
@@ -101,6 +90,8 @@ class VoiceRecorder {
             return;
         }
 
+        const alertName = prompt('Enter a name for this voice alert:', `Recorded Alert ${new Date().toLocaleDateString()}`) || `Recorded Alert ${new Date().toLocaleDateString()}`;
+
         try {
             const btn = document.getElementById('saveRecordingBtn');
             const originalText = btn.innerHTML;
@@ -114,11 +105,12 @@ class VoiceRecorder {
 
             const formData = new FormData();
             formData.append('voiceFile', file);
+            formData.append('alertName', alertName);
 
             const response = await fetch('http://localhost:5000/api/voice/upload', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${app.token}`
+                    'User-ID': app.currentUser.id
                 },
                 body: formData
             });

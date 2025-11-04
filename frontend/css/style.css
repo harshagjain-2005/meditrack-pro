@@ -800,3 +800,343 @@ body {
     .recording-controls { flex-direction: column; }
     .modal-footer { flex-direction: column; }
 }
+/* Photo Upload Styles */
+.photo-upload-area {
+    border: 2px dashed var(--gray-300);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.photo-upload-area:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+
+.photo-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.photo-preview i {
+    font-size: 3rem;
+    color: var(--gray-400);
+}
+
+.photo-preview img {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid var(--primary);
+}
+
+.profile-photo-preview {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: var(--gray-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    border: 3px solid var(--primary-light);
+}
+
+.profile-photo-preview i {
+    font-size: 3rem;
+    color: var(--gray-400);
+}
+
+.profile-photo-preview img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Voice Alert Items */
+.voice-alert-item {
+    background: var(--gray-50);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.voice-alert-item i {
+    color: var(--primary);
+    font-size: 1.5rem;
+}
+
+.voice-alert-info {
+    flex: 1;
+}
+
+.voice-alert-name {
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 4px;
+}
+
+.voice-alert-date {
+    font-size: 0.875rem;
+    color: var(--gray-500);
+}
+
+/* Enhanced Modal Styles */
+.modal-content {
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-header {
+    padding: 24px;
+    border-bottom: 1px solid var(--gray-200);
+    background: linear-gradient(135deg, var(--warning), #f59e0b);
+    color: white;
+}
+
+.modal-header h3 {
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-footer {
+    padding: 20px 24px;
+    border-top: 1px solid var(--gray-200);
+    background: var(--gray-50);
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+/* Medicine Table Enhancements */
+.medicine-table img {
+    vertical-align: middle;
+}
+
+/* Responsive Design for Modal */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .modal-footer {
+        flex-direction: column;
+    }
+    
+    .voice-alert-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .voice-alert-item audio {
+        width: 100%;
+    }
+}
+
+/* Notification Styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideIn 0.3s ease;
+}
+
+.notification-success { background: var(--success); }
+.notification-error { background: var(--danger); }
+.notification-warning { background: var(--warning); }
+.notification-info { background: var(--info); }
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+}
+/* File Upload Styles */
+.upload-area {
+    border: 2px dashed var(--gray-300);
+    border-radius: var(--radius);
+    padding: 40px 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    background: var(--gray-50);
+}
+
+.upload-area:hover {
+    border-color: var(--primary-color);
+    background: var(--primary-light);
+}
+
+.upload-area i {
+    font-size: 48px;
+    color: var(--gray-400);
+    margin-bottom: 16px;
+}
+
+.upload-area h4 {
+    color: var(--gray-700);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.upload-area p {
+    color: var(--gray-500);
+    font-size: 14px;
+}
+
+/* Recording Controls */
+.recording-controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.recording-controls .btn {
+    flex: 1;
+    min-width: 120px;
+}
+
+.recording-visualizer {
+    padding: 20px;
+    background: white;
+    border-radius: var(--radius);
+    text-align: center;
+    border: 1px solid var(--gray-200);
+    margin-bottom: 16px;
+}
+
+/* Voice Options */
+.voice-options {
+    margin-bottom: 16px;
+}
+
+/* Image Previews */
+#medicinePhotoPreview img,
+#profilePhotoPreview img {
+    border: 2px solid var(--gray-200);
+    box-shadow: var(--shadow-sm);
+}
+
+/* History Filters */
+.history-filters {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.history-filters .form-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .recording-controls {
+        flex-direction: column;
+    }
+    
+    .recording-controls .btn {
+        min-width: auto;
+    }
+    
+    .history-filters {
+        flex-direction: column;
+    }
+    
+    .upload-area {
+        padding: 20px 10px;
+    }
+    
+    .upload-area i {
+        font-size: 36px;
+    }
+}
+/* Recording animation */
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+
+/* Recording section improvements */
+#recordingSection {
+    transition: all 0.3s ease;
+}
+
+.recording-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.recording-controls .btn {
+    flex: 1;
+    min-width: 140px;
+}
+
+/* Audio player styling */
+#audioPlayer {
+    width: 100%;
+    margin-top: 10px;
+    border-radius: var(--radius);
+}
+
+/* Visualizer states */
+.recording-visualizer.recording {
+    background: linear-gradient(45deg, #ffebee, #ffcdd2);
+    border-color: #f44336;
+}
+
+.recording-visualizer.ready {
+    background: linear-gradient(45deg, #e8f5e8, #c8e6c9);
+    border-color: #4caf50;
+}

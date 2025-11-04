@@ -2,6 +2,11 @@
 class DashboardManager {
     constructor() {
         this.setupDashboardEventListeners();
+        this.mediaRecorder = null;
+        this.audioChunks = [];
+        this.audioBlob = null;
+        this.isRecording = false;
+        this.audioPlayer = null;
     }
 
     setupDashboardEventListeners() {
@@ -27,343 +32,442 @@ class DashboardManager {
             this.applyHistoryFilters();
         });
 
-        // Voice file upload
+        // File upload previews
+        document.getElementById('medicinePhotoInput').addEventListener('change', (e) => {
+            this.handleMedicinePhotoPreview(e.target.files[0]);
+        });
+
+        document.getElementById('profilePhotoInput').addEventListener('change', (e) => {
+            this.handleProfilePhotoPreview(e.target.files[0]);
+        });
+
         document.getElementById('voiceFileInput').addEventListener('change', (e) => {
-            this.handleVoiceFileUpload(e.target.files[0]);
+            this.handleVoiceFilePreview(e.target.files[0]);
         });
 
-        // Drag and drop for voice files
-        this.setupDragAndDrop();
+        // Voice recording setup
+        this.setupVoiceRecording();
     }
 
-    setupDragAndDrop() {
-        const uploadArea = document.getElementById('uploadArea');
-        
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.style.borderColor = 'var(--primary)';
-            uploadArea.style.background = 'var(--primary-light)';
-        });
+    setupVoiceRecording() {
+        const voiceAlertType = document.getElementById('voiceAlertType');
+        const recordingSection = document.getElementById('recordingSection');
+        const uploadVoiceSection = document.getElementById('uploadVoiceSection');
 
-        uploadArea.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            uploadArea.style.borderColor = 'var(--gray-300)';
-            uploadArea.style.background = 'white';
-        });
+        if (voiceAlertType) {
+            voiceAlertType.addEventListener('change', () => {
+                recordingSection.style.display = 'none';
+                uploadVoiceSection.style.display = 'none';
+                this.resetRecordingUI();
 
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.style.borderColor = 'var(--gray-300)';
-            uploadArea.style.background = 'white';
-            
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                this.handleVoiceFileUpload(files[0]);
-            }
-        });
-    }
-
-    async handleAddMedicine() {
-        const name = document.getElementById('medicineName').value.trim();
-        const dosage = document.getElementById('medicineDosage').value.trim();
-        const time = document.getElementById('medicineTime').value;
-        const frequency = document.getElementById('medicineFrequency').value;
-        const stock = document.getElementById('medicineStock').value;
-        const refill = document.getElementById('medicineRefill').value;
-
-        if (!name || !dosage || !time) {
-            app.showNotification('Please fill in all required fields', 'error');
-            return;
-        }
-
-        const btn = document.getElementById('saveMedicineBtn');
-        const originalText = btn.innerHTML;
-
-        try {
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-            btn.disabled = true;
-
-            await app.apiCall('/api/medicines', 'POST', {
-                name,
-                dosage,
-                time,
-                frequency,
-                stock: stock || 0,
-                refill_reminder: refill || 0
-            });
-
-            app.showNotification('Medicine added successfully!', 'success');
-            
-            // Clear form
-            document.getElementById('addMedicineForm').reset();
-            
-            // Reload medicines
-            await app.loadMedicines();
-            
-            // Switch back to dashboard
-            switchContentSection('dashboard-section');
-
-        } catch (error) {
-            console.error('Error adding medicine:', error);
-            app.showNotification('Failed to add medicine', 'error');
-        } finally {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
-    }
-
-    async handleUpdateProfile() {
-        const name = document.getElementById('profileName').value.trim();
-        const age = document.getElementById('profileAge').value;
-        const medicalHistory = document.getElementById('profileMedicalHistory').value;
-        const guardianName = document.getElementById('profileGuardianName').value;
-        const guardianContact = document.getElementById('profileGuardianContact').value;
-
-        if (!name) {
-            app.showNotification('Name is required', 'error');
-            return;
-        }
-
-        const btn = document.getElementById('saveProfileBtn');
-        const originalText = btn.innerHTML;
-
-        try {
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
-            btn.disabled = true;
-
-            await app.apiCall('/api/users/profile', 'PUT', {
-                name,
-                age: age || null,
-                medical_history: medicalHistory || null,
-                guardian_name: guardianName || null,
-                guardian_contact: guardianContact || null
-            });
-
-            app.showNotification('Profile updated successfully!', 'success');
-            
-            // Update app state
-            app.currentUser.name = name;
-            app.currentUser.age = age;
-            app.currentUser.medical_history = medicalHistory;
-            app.currentUser.guardian_name = guardianName;
-            app.currentUser.guardian_contact = guardianContact;
-            
-            // Update UI
-            document.getElementById('userName').textContent = name;
-
-        } catch (error) {
-            console.error('Error updating profile:', error);
-            app.showNotification('Failed to update profile', 'error');
-        } finally {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
-    }
-
-    async markMedicineAsTaken(medicineId) {
-        try {
-            const notes = prompt('Add any notes (optional):') || '';
-            
-            await app.apiCall(`/api/medicines/${medicineId}/taken`, 'POST', {
-                notes
-            });
-
-            app.showNotification('Medicine marked as taken!', 'success');
-            await app.loadMedicines();
-            await app.loadHistory();
-
-        } catch (error) {
-            console.error('Error marking medicine as taken:', error);
-            app.showNotification('Failed to update medicine', 'error');
-        }
-    }
-
-    async deleteMedicine(medicineId) {
-        if (!confirm('Are you sure you want to delete this medicine?')) {
-            return;
-        }
-
-        try {
-            await app.apiCall(`/api/medicines/${medicineId}`, 'DELETE');
-            
-            app.showNotification('Medicine deleted successfully!', 'success');
-            await app.loadMedicines();
-
-        } catch (error) {
-            console.error('Error deleting medicine:', error);
-            app.showNotification('Failed to delete medicine', 'error');
-        }
-    }
-
-    async handleVoiceFileUpload(file) {
-        if (!file) return;
-
-        // Validate file type
-        if (!file.type.startsWith('audio/')) {
-            app.showNotification('Please select an audio file', 'error');
-            return;
-        }
-
-        // Validate file size (10MB)
-        if (file.size > 10 * 1024 * 1024) {
-            app.showNotification('File size must be less than 10MB', 'error');
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('voiceFile', file);
-
-        try {
-            // Show upload progress
-            const uploadArea = document.getElementById('uploadArea');
-            const uploadProgress = document.getElementById('uploadProgress');
-            const progressFill = document.getElementById('progressFill');
-            const uploadStatus = document.getElementById('uploadStatus');
-
-            uploadArea.style.display = 'none';
-            uploadProgress.style.display = 'block';
-            progressFill.style.width = '0%';
-            uploadStatus.textContent = 'Uploading...';
-
-            // Simulate progress (in real app, you'd use XMLHttpRequest for progress events)
-            let progress = 0;
-            const progressInterval = setInterval(() => {
-                progress += 5;
-                progressFill.style.width = `${progress}%`;
-                if (progress >= 90) {
-                    clearInterval(progressInterval);
+                if (voiceAlertType.value === 'record') {
+                    recordingSection.style.display = 'block';
+                } else if (voiceAlertType.value === 'upload') {
+                    uploadVoiceSection.style.display = 'block';
                 }
-            }, 100);
+            });
 
-            const response = await fetch('http://localhost:5000/api/voice/upload', {
+            // Recording buttons
+            document.getElementById('startRecordingBtn').addEventListener('click', () => {
+                this.startRecording();
+            });
+
+            document.getElementById('stopRecordingBtn').addEventListener('click', () => {
+                this.stopRecording();
+            });
+
+            document.getElementById('playRecordingBtn').addEventListener('click', () => {
+                this.playRecording();
+            });
+
+            document.getElementById('saveRecordingBtn').addEventListener('click', () => {
+                this.saveRecording();
+            });
+        }
+    }
+
+    async startRecording() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.mediaRecorder = new MediaRecorder(stream);
+            this.audioChunks = [];
+
+            this.mediaRecorder.ondataavailable = (event) => {
+                this.audioChunks.push(event.data);
+            };
+
+            this.mediaRecorder.onstop = () => {
+                this.audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
+                const audioUrl = URL.createObjectURL(this.audioBlob);
+                document.getElementById('audioPlayer').src = audioUrl;
+                document.getElementById('recordedAudio').style.display = 'block';
+                document.getElementById('playRecordingBtn').disabled = false;
+                document.getElementById('saveRecordingBtn').disabled = false;
+
+                // Stop all tracks
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            this.mediaRecorder.start();
+            this.isRecording = true;
+
+            // Update UI
+            document.getElementById('recordingVisualizer').innerHTML = 
+                '<i class="fas fa-circle" style="color: red;"></i> Recording... Speak your reminder message now';
+            document.getElementById('startRecordingBtn').disabled = true;
+            document.getElementById('stopRecordingBtn').disabled = false;
+
+        } catch (error) {
+            console.error('Error accessing microphone:', error);
+            app.showNotification('Error accessing microphone. Please check permissions.', 'error');
+        }
+    }
+
+    stopRecording() {
+        if (this.mediaRecorder && this.isRecording) {
+            this.mediaRecorder.stop();
+            this.isRecording = false;
+
+            // Update UI
+            document.getElementById('recordingVisualizer').innerHTML = 
+                '<i class="fas fa-check-circle" style="color: green;"></i> Recording complete!';
+            document.getElementById('startRecordingBtn').disabled = false;
+            document.getElementById('stopRecordingBtn').disabled = true;
+        }
+    }
+
+    playRecording() {
+        const audioPlayer = document.getElementById('audioPlayer');
+        if (audioPlayer.src) {
+            audioPlayer.play();
+        }
+    }
+
+    async saveRecording() {
+        if (!this.audioBlob) {
+            app.showNotification('No recording to save. Please record a message first.', 'error');
+            return;
+        }
+
+        try {
+            const alertName = document.getElementById('alertName').value || `Voice Alert ${new Date().toLocaleString()}`;
+            
+            // Convert blob to file
+            const audioFile = new File([this.audioBlob], `${alertName}.wav`, { type: 'audio/wav' });
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('voiceFile', audioFile);
+            formData.append('alertName', alertName);
+
+            const response = await fetch('/api/voice/upload', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${app.token}`
+                    'user-id': app.getCurrentUser().id
                 },
                 body: formData
             });
 
-            clearInterval(progressInterval);
-            progressFill.style.width = '100%';
+            const result = await response.json();
 
-            const data = await response.json();
-
-            if (data.success) {
-                uploadStatus.textContent = 'Upload successful!';
-                app.showNotification('Voice alert uploaded successfully!', 'success');
-                
-                // Reload voice alerts
-                await app.loadVoiceAlerts();
-                
-                // Reset upload area
-                setTimeout(() => {
-                    uploadProgress.style.display = 'none';
-                    uploadArea.style.display = 'block';
-                    document.getElementById('voiceFileInput').value = '';
-                }, 1000);
+            if (result.success) {
+                app.showNotification('Voice alert saved successfully!', 'success');
+                this.resetRecordingUI();
             } else {
-                throw new Error(data.message);
+                app.showNotification(result.message || 'Failed to save voice alert', 'error');
             }
 
         } catch (error) {
-            console.error('Upload error:', error);
-            app.showNotification('Failed to upload voice alert', 'error');
-            
-            // Reset upload area
-            document.getElementById('uploadProgress').style.display = 'none';
-            document.getElementById('uploadArea').style.display = 'block';
+            console.error('Error saving recording:', error);
+            app.showNotification('Error saving recording', 'error');
         }
     }
 
-    async deleteVoiceAlert(alertId) {
-        if (!confirm('Are you sure you want to delete this voice alert?')) {
-            return;
-        }
+    resetRecordingUI() {
+        this.audioBlob = null;
+        this.audioChunks = [];
+        document.getElementById('recordingVisualizer').innerHTML = 
+            '<i class="fas fa-microphone"></i> Click "Start Recording" to record your voice alert';
+        document.getElementById('recordedAudio').style.display = 'none';
+        document.getElementById('startRecordingBtn').disabled = false;
+        document.getElementById('stopRecordingBtn').disabled = true;
+        document.getElementById('playRecordingBtn').disabled = true;
+        document.getElementById('saveRecordingBtn').disabled = true;
+    }
 
+    handleMedicinePhotoPreview(file) {
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('medicinePhotoPreview').innerHTML = `
+                    <img src="${e.target.result}" alt="Medicine Preview" style="max-width: 200px; max-height: 200px; border-radius: var(--radius);">
+                `;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    handleProfilePhotoPreview(file) {
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('profilePhotoPreview').innerHTML = `
+                    <img src="${e.target.result}" alt="Profile Preview" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">
+                `;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    handleVoiceFilePreview(file) {
+        if (file) {
+            const fileName = document.getElementById('alertName') || document.createElement('input');
+            if (!fileName.value) {
+                fileName.value = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+            }
+            app.showNotification(`Voice file selected: ${file.name}`, 'success');
+        }
+    }
+
+    async handleAddMedicine() {
         try {
-            // Note: You would need to implement this endpoint in the backend
-            await app.apiCall(`/api/voice/${alertId}`, 'DELETE');
+            const formData = new FormData();
+            const user = app.getCurrentUser();
             
-            app.showNotification('Voice alert deleted successfully!', 'success');
-            await app.loadVoiceAlerts();
+            // Add basic medicine data
+            formData.append('name', document.getElementById('medicineName').value);
+            formData.append('dosage', document.getElementById('medicineDosage').value);
+            formData.append('time', document.getElementById('medicineTime').value);
+            formData.append('frequency', document.getElementById('medicineFrequency').value);
+            formData.append('stock', document.getElementById('medicineStock').value || '0');
+            formData.append('refill_reminder', document.getElementById('medicineRefill').value || '0');
+            formData.append('voice_alert_type', document.getElementById('voiceAlertType').value);
+            
+            // Add medicine photo if exists
+            const medicinePhotoInput = document.getElementById('medicinePhotoInput');
+            if (medicinePhotoInput.files[0]) {
+                formData.append('medicinePhoto', medicinePhotoInput.files[0]);
+            }
+            
+            // Add voice file if exists
+            const voiceFileInput = document.getElementById('voiceFileInput');
+            if (voiceFileInput.files[0]) {
+                formData.append('voiceFile', voiceFileInput.files[0]);
+                formData.append('alertName', document.getElementById('alertName').value || `Voice for ${document.getElementById('medicineName').value}`);
+            }
+
+            const response = await fetch('/api/medicines', {
+                method: 'POST',
+                headers: {
+                    'user-id': user.id
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                app.showNotification('Medicine added successfully!', 'success');
+                this.resetMedicineForm();
+                switchContentSection('dashboard-section');
+                app.loadDashboardData(); // Refresh dashboard
+            } else {
+                app.showNotification(result.message || 'Failed to add medicine', 'error');
+            }
 
         } catch (error) {
-            console.error('Error deleting voice alert:', error);
-            app.showNotification('Failed to delete voice alert', 'error');
+            console.error('Error adding medicine:', error);
+            app.showNotification('Error adding medicine', 'error');
+        }
+    }
+
+    resetMedicineForm() {
+        document.getElementById('addMedicineForm').reset();
+        document.getElementById('medicinePhotoPreview').innerHTML = '<i class="fas fa-pills" style="font-size:48px;color:var(--gray-400);"></i>';
+        document.getElementById('recordingSection').style.display = 'none';
+        document.getElementById('uploadVoiceSection').style.display = 'none';
+        this.resetRecordingUI();
+    }
+
+    async handleUpdateProfile() {
+        try {
+            const formData = new FormData();
+            const user = app.getCurrentUser();
+            
+            formData.append('name', document.getElementById('profileName').value);
+            formData.append('age', document.getElementById('profileAge').value);
+            formData.append('medical_history', document.getElementById('profileMedicalHistory').value);
+            formData.append('guardian_name', document.getElementById('profileGuardianName').value);
+            formData.append('guardian_contact', document.getElementById('profileGuardianContact').value);
+            
+            // Add profile photo if exists
+            const profilePhotoInput = document.getElementById('profilePhotoInput');
+            if (profilePhotoInput.files[0]) {
+                formData.append('profilePhoto', profilePhotoInput.files[0]);
+            }
+
+            const response = await fetch('/api/users/profile', {
+                method: 'PUT',
+                headers: {
+                    'user-id': user.id
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                app.showNotification('Profile updated successfully!', 'success');
+                // Update current user data
+                app.setCurrentUser(result.user);
+                this.loadProfileData();
+            } else {
+                app.showNotification(result.message || 'Failed to update profile', 'error');
+            }
+
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            app.showNotification('Error updating profile', 'error');
+        }
+    }
+
+    loadProfileData() {
+        const user = app.getCurrentUser();
+        if (user) {
+            document.getElementById('profileName').value = user.name || '';
+            document.getElementById('profileEmail').value = user.email || '';
+            document.getElementById('profileAge').value = user.age || '';
+            document.getElementById('profileMedicalHistory').value = user.medical_history || '';
+            document.getElementById('profileGuardianName').value = user.guardian_name || '';
+            document.getElementById('profileGuardianContact').value = user.guardian_contact || '';
+            
+            // Load profile photo if exists
+            if (user.profile_photo) {
+                document.getElementById('profilePhotoPreview').innerHTML = `
+                    <img src="/uploads/profile-photos/${user.profile_photo}" alt="Profile Photo" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">
+                `;
+            } else {
+                document.getElementById('profilePhotoPreview').innerHTML = `
+                    <i class="fas fa-user" style="font-size:48px;color:var(--gray-400);"></i>
+                `;
+            }
         }
     }
 
     async exportHistory() {
         try {
-            const response = await fetch('http://localhost:5000/api/export?format=csv', {
+            const user = app.getCurrentUser();
+            const response = await fetch('/api/export/history', {
                 headers: {
-                    'Authorization': `Bearer ${app.token}`
+                    'user-id': user.id
                 }
             });
 
-            if (!response.ok) {
-                throw new Error('Export failed');
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'meditrack-history.csv';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                app.showNotification('History exported successfully!', 'success');
+            } else {
+                const error = await response.json();
+                app.showNotification(error.message || 'Failed to export history', 'error');
             }
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `meditrack-history-${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-
-            app.showNotification('History exported successfully!', 'success');
-
         } catch (error) {
-            console.error('Export error:', error);
-            app.showNotification('Failed to export history', 'error');
+            console.error('Error exporting history:', error);
+            app.showNotification('Error exporting history', 'error');
         }
     }
 
-    async applyHistoryFilters() {
-        const range = document.getElementById('historyRange').value;
-        const status = document.getElementById('historyStatus').value;
-
-        try {
-            let url = `/api/history?range=${range}`;
-            if (status !== 'all') {
-                url += `&status=${status}`;
+    applyHistoryFilters() {
+        const statusFilter = document.getElementById('historyStatusFilter').value;
+        const dateFilter = document.getElementById('historyDateFilter').value;
+        
+        const historyItems = document.querySelectorAll('.history-item');
+        
+        historyItems.forEach(item => {
+            let showItem = true;
+            
+            // Status filter
+            if (statusFilter && statusFilter !== 'all') {
+                const itemStatus = item.getAttribute('data-status');
+                if (itemStatus !== statusFilter) {
+                    showItem = false;
+                }
             }
-
-            const response = await app.apiCall(url, 'GET');
-            if (response.success) {
-                app.history = response.history || [];
-                app.updateHistoryTable();
+            
+            // Date filter (simplified - would need more complex date handling)
+            if (dateFilter && showItem) {
+                const itemDate = item.getAttribute('data-date');
+                if (itemDate !== dateFilter) {
+                    showItem = false;
+                }
             }
-        } catch (error) {
-            console.error('Error applying filters:', error);
-            app.showNotification('Failed to apply filters', 'error');
-        }
+            
+            item.style.display = showItem ? 'block' : 'none';
+        });
     }
 }
 
-// Initialize dashboard manager
-const dashboardManager = new DashboardManager();
+// Initialize dashboard manager when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    window.dashboardManager = new DashboardManager();
+});
 
-// Make methods globally available for onclick handlers
-window.app = app;
+// Global functions for UI interactions
+function switchContentSection(sectionId) {
+    // Hide all sections
+    const sections = document.querySelectorAll('.content-section');
+    sections.forEach(section => {
+        section.style.display = 'none';
+    });
+    
+    // Show target section
+    const targetSection = document.getElementById(sectionId);
+    if (targetSection) {
+        targetSection.style.display = 'block';
+    }
+    
+    // Load section-specific data
+    if (sectionId === 'profile-section') {
+        dashboardManager.loadProfileData();
+    } else if (sectionId === 'history-section') {
+        app.loadHistory();
+    } else if (sectionId === 'dashboard-section') {
+        app.loadDashboardData();
+    }
+}
 
-// Medicine actions
-app.markMedicineAsTaken = async function(medicineId) {
-    await dashboardManager.markMedicineAsTaken(medicineId);
-};
+function markMedicineAsTaken(medicineId) {
+    const notes = prompt('Add any notes (optional):');
+    app.markMedicineAsTaken(medicineId, notes || '');
+}
 
-app.deleteMedicine = async function(medicineId) {
-    await dashboardManager.deleteMedicine(medicineId);
-};
+function rescheduleMedicine(medicineId) {
+    const minutes = prompt('Remind again in how many minutes?', '15');
+    if (minutes && !isNaN(minutes)) {
+        app.rescheduleMedicine(medicineId, parseInt(minutes));
+    }
+}
 
-app.deleteVoiceAlert = async function(alertId) {
-    await dashboardManager.deleteVoiceAlert(alertId);
-};
+function deleteMedicine(medicineId) {
+    if (confirm('Are you sure you want to delete this medicine?')) {
+        app.deleteMedicine(medicineId);
+    }
+}
 
-app.rescheduleReminder = async function(minutes) {
-    await dashboardManager.rescheduleReminder(minutes);
-};
+function showMedicineDetails(medicineId) {
+    // Implementation for showing medicine details modal
+    console.log('Show details for medicine:', medicineId);
+}
+
+function clearReminder(medicineId) {
+    app.clearReminder(medicineId);
+}
