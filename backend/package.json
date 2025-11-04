@@ -1,17 +1,19 @@
 {
-  "name": "meditrack-backend",
+  "name": "meditrack-pro",
   "version": "1.0.0",
-  "description": "Backend for MediTrack Pro",
+  "description": "Medicine reminder and tracking application",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
   "dependencies": {
-    "express": "4.18.2",
-    "cors": "2.8.5"
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.15.3"
   },
-  "keywords": ["medicine", "tracker", "healthcare", "reminder"],
-  "author": "MediTrack Team",
-  "license": "MIT"
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
 }

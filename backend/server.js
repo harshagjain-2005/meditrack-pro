@@ -2,38 +2,303 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const multer = require('multer');
+const mysql = require('mysql2/promise');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
+
+// MySQL Database Configuration
+const dbConfig = {
+    host: 'localhost',
+    user: 'root', // Change to your MySQL username
+    password: '12345678', // Change to your MySQL password
+    database: 'meditrack_db'
+};
+
+// Initialize Database Connection
+async function initializeDatabase() {
+    try {
+        // Create connection without database first
+        const connection = await mysql.createConnection({
+            host: dbConfig.host,
+            user: dbConfig.user,
+            password: dbConfig.password
+        });
+
+        // Create database if it doesn't exist
+        await connection.execute(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`);
+        console.log('✅ Database created or already exists');
+
+        // Connect to the database
+        const db = await mysql.createConnection(dbConfig);
+        console.log('✅ Connected to MySQL database');
+
+        // Create tables
+        await createTables(db);
+        return db;
+    } catch (error) {
+        console.error('❌ Database initialization failed:', error);
+        process.exit(1);
+    }
+}
+
+// Create tables
+async function createTables(db) {
+    // Users table
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS users (
+            id VARCHAR(255) PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            age INT,
+            medical_history TEXT,
+            guardian_name VARCHAR(255),
+            guardian_contact VARCHAR(255),
+            profile_photo VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // Medicines table
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS medicines (
+            id VARCHAR(255) PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            dosage VARCHAR(255) NOT NULL,
+            time TIME NOT NULL,
+            frequency VARCHAR(50) DEFAULT 'once',
+            stock INT DEFAULT 0,
+            refill_reminder INT DEFAULT 0,
+            voice_alert_type VARCHAR(50) DEFAULT 'default',
+            voice_alert_id VARCHAR(255),
+            medicine_photo VARCHAR(255),
+            status VARCHAR(50) DEFAULT 'pending',
+            taken_at TIMESTAMP NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    `);
+
+    // History table
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS history (
+            id VARCHAR(255) PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL,
+            medicine_id VARCHAR(255) NOT NULL,
+            medicine_name VARCHAR(255) NOT NULL,
+            dosage VARCHAR(255) NOT NULL,
+            scheduled_time TIME NOT NULL,
+            actual_time VARCHAR(255),
+            status VARCHAR(50) NOT NULL,
+            notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    `);
+
+    // Voice alerts table
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS voice_alerts (
+            id VARCHAR(255) PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            file_name VARCHAR(255) NOT NULL,
+            file_path VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    `);
+
+    console.log('✅ All tables created successfully');
+}
+
+// Initialize database
+let db;
+initializeDatabase().then(connection => {
+    db = connection;
+});
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Simple in-memory storage
-let users = [];
-let medicines = [];
-let history = [];
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        let folder = 'uploads/';
+        if (file.fieldname === 'profilePhoto') {
+            folder += 'profile-photos/';
+        } else if (file.fieldname === 'medicinePhoto') {
+            folder += 'medicine-photos/';
+        } else if (file.fieldname === 'voiceFile') {
+            folder += 'voice-alerts/';
+        }
+        
+        const fullPath = path.join(__dirname, folder);
+        if (!fs.existsSync(fullPath)) {
+            fs.mkdirSync(fullPath, { recursive: true });
+        }
+        cb(null, folder);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    }
+});
 
-// Create uploads directory
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-    console.log('✅ Created uploads directory');
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 10 * 1024 * 1024
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.fieldname === 'voiceFile') {
+            if (file.mimetype.startsWith('audio/')) {
+                cb(null, true);
+            } else {
+                cb(new Error('Only audio files are allowed for voice alerts!'), false);
+            }
+        } else if (file.fieldname === 'profilePhoto' || file.fieldname === 'medicinePhoto') {
+            if (file.mimetype.startsWith('image/')) {
+                cb(null, true);
+            } else {
+                cb(new Error('Only image files are allowed!'), false);
+            }
+        } else {
+            cb(null, true);
+        }
+    }
+});
+
+// In-memory storage for active reminders (you can move this to database too)
+let activeReminders = new Map();
+let reminderIntervals = new Map();
+
+// Create uploads directory structure
+const uploadsDirs = [
+    'uploads',
+    'uploads/profile-photos',
+    'uploads/medicine-photos',
+    'uploads/voice-alerts'
+];
+
+uploadsDirs.forEach(dir => {
+    const fullPath = path.join(__dirname, dir);
+    if (!fs.existsSync(fullPath)) {
+        fs.mkdirSync(fullPath, { recursive: true });
+    }
+});
+
+console.log('✅ Upload directories created');
+
+// Function to check and trigger reminders
+async function checkReminders() {
+    try {
+        const [medicines] = await db.execute(`
+            SELECT * FROM medicines WHERE status = 'pending'
+        `);
+
+        const now = new Date();
+        const currentTime = now.toTimeString().slice(0, 5);
+
+        for (const medicine of medicines) {
+            if (medicine.time === currentTime) {
+                if (!activeReminders.has(medicine.id)) {
+                    console.log(`🔔 Reminder triggered for: ${medicine.name} at ${currentTime}`);
+                    activeReminders.set(medicine.id, medicine);
+                    startReminderLoop(medicine);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error checking reminders:', error);
+    }
 }
+
+function startReminderLoop(medicine) {
+    if (reminderIntervals.has(medicine.id)) {
+        clearInterval(reminderIntervals.get(medicine.id));
+    }
+    
+    const interval = setInterval(() => {
+        if (activeReminders.has(medicine.id)) {
+            console.log(`🔊 Playing reminder for: ${medicine.name}`);
+        } else {
+            clearInterval(interval);
+            reminderIntervals.delete(medicine.id);
+        }
+    }, 30000);
+    
+    reminderIntervals.set(medicine.id, interval);
+}
+
+// Check reminders every 10 seconds
+setInterval(checkReminders, 10000);
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Health check
 app.get('/api/health', (req, res) => {
     res.json({ 
         success: true, 
         message: 'MediTrack Pro API is running!',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        port: PORT,
+        database: 'MySQL Connected'
+    });
+});
+
+// Get active reminders
+app.get('/api/reminders', async (req, res) => {
+    try {
+        const userId = req.headers['user-id'];
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User ID required'
+            });
+        }
+        
+        const userReminders = Array.from(activeReminders.values())
+            .filter(med => med.user_id === userId);
+        
+        res.json({
+            success: true,
+            reminders: userReminders
+        });
+    } catch (error) {
+        console.error('Get reminders error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch reminders'
+        });
+    }
+});
+
+// Clear reminder
+app.delete('/api/reminders/:medicineId', (req, res) => {
+    const medicineId = req.params.medicineId;
+    
+    activeReminders.delete(medicineId);
+    if (reminderIntervals.has(medicineId)) {
+        clearInterval(reminderIntervals.get(medicineId));
+        reminderIntervals.delete(medicineId);
+    }
+    
+    res.json({
+        success: true,
+        message: 'Reminder cleared'
     });
 });
 
 // Auth Routes
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
     try {
         const { name, email, password, age, medical_history, guardian_name, guardian_contact } = req.body;
 
@@ -44,8 +309,13 @@ app.post('/api/auth/register', (req, res) => {
             });
         }
 
-        const existingUser = users.find(user => user.email === email);
-        if (existingUser) {
+        // Check if user exists
+        const [existingUsers] = await db.execute(
+            'SELECT * FROM users WHERE email = ?',
+            [email]
+        );
+
+        if (existingUsers.length > 0) {
             return res.status(400).json({
                 success: false,
                 message: 'User already exists with this email'
@@ -61,10 +331,15 @@ app.post('/api/auth/register', (req, res) => {
             medical_history: medical_history || null,
             guardian_name: guardian_name || null,
             guardian_contact: guardian_contact || null,
-            created_at: new Date().toISOString()
+            profile_photo: null
         };
 
-        users.push(user);
+        await db.execute(
+            `INSERT INTO users (id, name, email, password, age, medical_history, guardian_name, guardian_contact, profile_photo) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [user.id, user.name, user.email, user.password, user.age, user.medical_history, 
+             user.guardian_name, user.guardian_contact, user.profile_photo]
+        );
 
         res.status(201).json({
             success: true,
@@ -76,7 +351,8 @@ app.post('/api/auth/register', (req, res) => {
                 age: user.age,
                 medical_history: user.medical_history,
                 guardian_name: user.guardian_name,
-                guardian_contact: user.guardian_contact
+                guardian_contact: user.guardian_contact,
+                profile_photo: user.profile_photo
             }
         });
 
@@ -89,7 +365,7 @@ app.post('/api/auth/register', (req, res) => {
     }
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
@@ -100,13 +376,19 @@ app.post('/api/auth/login', (req, res) => {
             });
         }
 
-        const user = users.find(user => user.email === email);
-        if (!user) {
+        const [users] = await db.execute(
+            'SELECT * FROM users WHERE email = ?',
+            [email]
+        );
+
+        if (users.length === 0) {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials'
             });
         }
+
+        const user = users[0];
 
         if (user.password !== password) {
             return res.status(401).json({
@@ -125,7 +407,8 @@ app.post('/api/auth/login', (req, res) => {
                 age: user.age,
                 medical_history: user.medical_history,
                 guardian_name: user.guardian_name,
-                guardian_contact: user.guardian_contact
+                guardian_contact: user.guardian_contact,
+                profile_photo: user.profile_photo
             }
         });
 
@@ -138,15 +421,106 @@ app.post('/api/auth/login', (req, res) => {
     }
 });
 
-// Medicine Routes
-app.get('/api/medicines', (req, res) => {
+// Voice Alerts Routes
+app.post('/api/voice/upload', upload.single('voiceFile'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded'
+            });
+        }
+
+        const userId = req.headers['user-id'];
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User ID required'
+            });
+        }
+
+        const { alertName } = req.body;
+
+        const voiceAlert = {
+            id: Date.now().toString(),
+            user_id: userId,
+            name: alertName || `Voice Alert ${new Date().toLocaleDateString()}`,
+            file_name: req.file.filename,
+            file_path: req.file.path
+        };
+
+        await db.execute(
+            'INSERT INTO voice_alerts (id, user_id, name, file_name, file_path) VALUES (?, ?, ?, ?, ?)',
+            [voiceAlert.id, voiceAlert.user_id, voiceAlert.name, voiceAlert.file_name, voiceAlert.file_path]
+        );
+
+        res.json({
+            success: true,
+            message: 'Voice alert uploaded successfully',
+            voiceAlert: {
+                id: voiceAlert.id,
+                name: voiceAlert.name,
+                file_name: voiceAlert.file_name,
+                created_at: new Date().toISOString()
+            }
+        });
+
+    } catch (error) {
+        console.error('Upload voice error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to upload voice alert'
+        });
+    }
+});
+
+app.get('/api/voice', async (req, res) => {
     try {
         const userId = req.headers['user-id'];
-        const userMedicines = medicines.filter(med => med.user_id === userId);
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User ID required'
+            });
+        }
+        
+        const [voiceAlerts] = await db.execute(
+            'SELECT * FROM voice_alerts WHERE user_id = ? ORDER BY created_at DESC',
+            [userId]
+        );
         
         res.json({
             success: true,
-            medicines: userMedicines
+            voiceAlerts: voiceAlerts
+        });
+    } catch (error) {
+        console.error('Get voice alerts error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch voice alerts'
+        });
+    }
+});
+
+// Medicine Routes
+app.get('/api/medicines', async (req, res) => {
+    try {
+        const userId = req.headers['user-id'];
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User ID required'
+            });
+        }
+        
+        const [medicines] = await db.execute(
+            'SELECT * FROM medicines WHERE user_id = ? ORDER BY created_at DESC',
+            [userId]
+        );
+        
+        res.json({
+            success: true,
+            medicines: medicines
         });
     } catch (error) {
         console.error('Get medicines error:', error);
@@ -157,16 +531,52 @@ app.get('/api/medicines', (req, res) => {
     }
 });
 
-app.post('/api/medicines', (req, res) => {
+app.post('/api/medicines', upload.fields([
+    { name: 'medicinePhoto', maxCount: 1 },
+    { name: 'voiceFile', maxCount: 1 }
+]), async (req, res) => {
     try {
-        const { name, dosage, time, frequency, stock, refill_reminder } = req.body;
+        const { name, dosage, time, frequency, stock, refill_reminder, voice_alert_type, alertName } = req.body;
         const userId = req.headers['user-id'];
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User ID required'
+            });
+        }
 
         if (!name || !dosage || !time) {
             return res.status(400).json({
                 success: false,
                 message: 'Name, dosage and time are required'
             });
+        }
+
+        let medicinePhoto = null;
+        let voiceAlertId = null;
+
+        // Handle medicine photo
+        if (req.files && req.files['medicinePhoto']) {
+            medicinePhoto = req.files['medicinePhoto'][0].filename;
+        }
+
+        // Handle voice alert
+        if (req.files && req.files['voiceFile']) {
+            const voiceFile = req.files['voiceFile'][0];
+            const voiceAlert = {
+                id: Date.now().toString(),
+                user_id: userId,
+                name: alertName || `Voice for ${name}`,
+                file_name: voiceFile.filename,
+                file_path: voiceFile.path
+            };
+
+            await db.execute(
+                'INSERT INTO voice_alerts (id, user_id, name, file_name, file_path) VALUES (?, ?, ?, ?, ?)',
+                [voiceAlert.id, voiceAlert.user_id, voiceAlert.name, voiceAlert.file_name, voiceAlert.file_path]
+            );
+            voiceAlertId = voiceAlert.id;
         }
 
         const medicine = {
@@ -178,11 +588,20 @@ app.post('/api/medicines', (req, res) => {
             frequency: frequency || 'once',
             stock: stock || 0,
             refill_reminder: refill_reminder || 0,
-            status: 'pending',
-            created_at: new Date().toISOString()
+            voice_alert_type: voice_alert_type || 'default',
+            voice_alert_id: voiceAlertId,
+            medicine_photo: medicinePhoto,
+            status: 'pending'
         };
 
-        medicines.push(medicine);
+        await db.execute(
+            `INSERT INTO medicines (id, user_id, name, dosage, time, frequency, stock, refill_reminder, 
+             voice_alert_type, voice_alert_id, medicine_photo, status) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [medicine.id, medicine.user_id, medicine.name, medicine.dosage, medicine.time, 
+             medicine.frequency, medicine.stock, medicine.refill_reminder, medicine.voice_alert_type,
+             medicine.voice_alert_id, medicine.medicine_photo, medicine.status]
+        );
 
         res.status(201).json({
             success: true,
@@ -199,21 +618,171 @@ app.post('/api/medicines', (req, res) => {
     }
 });
 
-app.post('/api/medicines/:id/taken', (req, res) => {
+// Get single medicine for editing
+app.get('/api/medicines/:id', async (req, res) => {
     try {
         const medicineId = req.params.id;
-        const { notes } = req.body;
+        const userId = req.headers['user-id'];
 
-        const medicine = medicines.find(med => med.id === medicineId);
-        if (!medicine) {
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User ID required'
+            });
+        }
+
+        const [medicines] = await db.execute(
+            'SELECT * FROM medicines WHERE id = ? AND user_id = ?',
+            [medicineId, userId]
+        );
+
+        if (medicines.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Medicine not found'
             });
         }
 
-        medicine.status = 'taken';
-        medicine.taken_at = new Date().toISOString();
+        res.json({
+            success: true,
+            medicine: medicines[0]
+        });
+
+    } catch (error) {
+        console.error('Get medicine error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch medicine'
+        });
+    }
+});
+
+// Update medicine
+app.put('/api/medicines/:id', upload.fields([
+    { name: 'medicinePhoto', maxCount: 1 },
+    { name: 'voiceFile', maxCount: 1 }
+]), async (req, res) => {
+    try {
+        const medicineId = req.params.id;
+        const userId = req.headers['user-id'];
+        const { name, dosage, time, frequency, stock, refill_reminder, voice_alert_type, alertName } = req.body;
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User ID required'
+            });
+        }
+
+        // Check if medicine exists
+        const [medicines] = await db.execute(
+            'SELECT * FROM medicines WHERE id = ? AND user_id = ?',
+            [medicineId, userId]
+        );
+
+        if (medicines.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Medicine not found'
+            });
+        }
+
+        let medicinePhoto = medicines[0].medicine_photo;
+        let voiceAlertId = medicines[0].voice_alert_id;
+
+        // Handle medicine photo update
+        if (req.files && req.files['medicinePhoto']) {
+            medicinePhoto = req.files['medicinePhoto'][0].filename;
+        }
+
+        // Handle voice alert update
+        if (req.files && req.files['voiceFile']) {
+            const voiceFile = req.files['voiceFile'][0];
+            const voiceAlert = {
+                id: Date.now().toString(),
+                user_id: userId,
+                name: alertName || `Voice for ${name}`,
+                file_name: voiceFile.filename,
+                file_path: voiceFile.path
+            };
+
+            await db.execute(
+                'INSERT INTO voice_alerts (id, user_id, name, file_name, file_path) VALUES (?, ?, ?, ?, ?)',
+                [voiceAlert.id, voiceAlert.user_id, voiceAlert.name, voiceAlert.file_name, voiceAlert.file_path]
+            );
+            voiceAlertId = voiceAlert.id;
+        }
+
+        // Update medicine
+        await db.execute(
+            `UPDATE medicines SET 
+             name = ?, dosage = ?, time = ?, frequency = ?, stock = ?, refill_reminder = ?,
+             voice_alert_type = ?, voice_alert_id = ?, medicine_photo = ?
+             WHERE id = ? AND user_id = ?`,
+            [name, dosage, time, frequency, stock, refill_reminder, 
+             voice_alert_type, voiceAlertId, medicinePhoto, medicineId, userId]
+        );
+
+        // Get updated medicine
+        const [updatedMedicines] = await db.execute(
+            'SELECT * FROM medicines WHERE id = ? AND user_id = ?',
+            [medicineId, userId]
+        );
+
+        res.json({
+            success: true,
+            message: 'Medicine updated successfully',
+            medicine: updatedMedicines[0]
+        });
+
+    } catch (error) {
+        console.error('Update medicine error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update medicine'
+        });
+    }
+});
+
+app.post('/api/medicines/:id/taken', async (req, res) => {
+    try {
+        const medicineId = req.params.id;
+        const { notes } = req.body;
+        const userId = req.headers['user-id'];
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User ID required'
+            });
+        }
+
+        const [medicines] = await db.execute(
+            'SELECT * FROM medicines WHERE id = ? AND user_id = ?',
+            [medicineId, userId]
+        );
+
+        if (medicines.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Medicine not found'
+            });
+        }
+
+        const medicine = medicines[0];
+
+        // Update medicine status
+        await db.execute(
+            'UPDATE medicines SET status = "taken", taken_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [medicineId]
+        );
+
+        // Clear from active reminders
+        activeReminders.delete(medicineId);
+        if (reminderIntervals.has(medicineId)) {
+            clearInterval(reminderIntervals.get(medicineId));
+            reminderIntervals.delete(medicineId);
+        }
 
         // Add to history
         const historyEntry = {
@@ -223,12 +792,25 @@ app.post('/api/medicines/:id/taken', (req, res) => {
             medicine_name: medicine.name,
             dosage: medicine.dosage,
             scheduled_time: medicine.time,
-            actual_time: new Date().toISOString(),
+            actual_time: new Date().toLocaleString('en-US', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false 
+            }),
             status: 'taken',
-            notes: notes || '',
-            created_at: new Date().toISOString()
+            notes: notes || ''
         };
-        history.push(historyEntry);
+
+        await db.execute(
+            `INSERT INTO history (id, user_id, medicine_id, medicine_name, dosage, scheduled_time, 
+             actual_time, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [historyEntry.id, historyEntry.user_id, historyEntry.medicine_id, historyEntry.medicine_name,
+             historyEntry.dosage, historyEntry.scheduled_time, historyEntry.actual_time,
+             historyEntry.status, historyEntry.notes]
+        );
 
         res.json({
             success: true,
@@ -244,19 +826,110 @@ app.post('/api/medicines/:id/taken', (req, res) => {
     }
 });
 
-app.delete('/api/medicines/:id', (req, res) => {
+app.post('/api/medicines/:id/reschedule', async (req, res) => {
     try {
         const medicineId = req.params.id;
-        const medicineIndex = medicines.findIndex(med => med.id === medicineId);
+        const { remindInMinutes } = req.body;
+        const userId = req.headers['user-id'];
 
-        if (medicineIndex === -1) {
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User ID required'
+            });
+        }
+
+        const [medicines] = await db.execute(
+            'SELECT * FROM medicines WHERE id = ? AND user_id = ?',
+            [medicineId, userId]
+        );
+
+        if (medicines.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Medicine not found'
             });
         }
 
-        medicines.splice(medicineIndex, 1);
+        const medicine = medicines[0];
+
+        // Clear current reminder
+        activeReminders.delete(medicineId);
+        if (reminderIntervals.has(medicineId)) {
+            clearInterval(reminderIntervals.get(medicineId));
+            reminderIntervals.delete(medicineId);
+        }
+
+        // Calculate new time
+        const newTime = new Date(Date.now() + remindInMinutes * 60000);
+        const newTimeString = newTime.toTimeString().slice(0, 5);
+
+        // Add to history as rescheduled
+        const historyEntry = {
+            id: Date.now().toString(),
+            user_id: medicine.user_id,
+            medicine_id: medicineId,
+            medicine_name: medicine.name,
+            dosage: medicine.dosage,
+            scheduled_time: medicine.time,
+            actual_time: null,
+            status: 'rescheduled',
+            notes: `Rescheduled for ${remindInMinutes} minutes later (${newTimeString})`
+        };
+
+        await db.execute(
+            `INSERT INTO history (id, user_id, medicine_id, medicine_name, dosage, scheduled_time, 
+             actual_time, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [historyEntry.id, historyEntry.user_id, historyEntry.medicine_id, historyEntry.medicine_name,
+             historyEntry.dosage, historyEntry.scheduled_time, historyEntry.actual_time,
+             historyEntry.status, historyEntry.notes]
+        );
+
+        res.json({
+            success: true,
+            message: `Medicine will remind you again in ${remindInMinutes} minutes`,
+            newTime: newTimeString
+        });
+
+    } catch (error) {
+        console.error('Reschedule error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to reschedule medicine'
+        });
+    }
+});
+
+app.delete('/api/medicines/:id', async (req, res) => {
+    try {
+        const medicineId = req.params.id;
+        const userId = req.headers['user-id'];
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User ID required'
+            });
+        }
+
+        const [result] = await db.execute(
+            'DELETE FROM medicines WHERE id = ? AND user_id = ?',
+            [medicineId, userId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Medicine not found'
+            });
+        }
+
+        // Clear from active reminders
+        activeReminders.delete(medicineId);
+        if (reminderIntervals.has(medicineId)) {
+            clearInterval(reminderIntervals.get(medicineId));
+            reminderIntervals.delete(medicineId);
+        }
 
         res.json({
             success: true,
@@ -273,17 +946,29 @@ app.delete('/api/medicines/:id', (req, res) => {
 });
 
 // User Profile Routes
-app.get('/api/users/profile', (req, res) => {
+app.get('/api/users/profile', async (req, res) => {
     try {
         const userId = req.headers['user-id'];
-        const user = users.find(u => u.id === userId);
-        
-        if (!user) {
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User ID required'
+            });
+        }
+
+        const [users] = await db.execute(
+            'SELECT * FROM users WHERE id = ?',
+            [userId]
+        );
+
+        if (users.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
             });
         }
+
+        const user = users[0];
 
         res.json({
             success: true,
@@ -294,7 +979,8 @@ app.get('/api/users/profile', (req, res) => {
                 age: user.age,
                 medical_history: user.medical_history,
                 guardian_name: user.guardian_name,
-                guardian_contact: user.guardian_contact
+                guardian_contact: user.guardian_contact,
+                profile_photo: user.profile_photo
             }
         });
 
@@ -307,28 +993,62 @@ app.get('/api/users/profile', (req, res) => {
     }
 });
 
-app.put('/api/users/profile', (req, res) => {
+app.put('/api/users/profile', upload.single('profilePhoto'), async (req, res) => {
     try {
         const userId = req.headers['user-id'];
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User ID required'
+            });
+        }
+
         const { name, age, medical_history, guardian_name, guardian_contact } = req.body;
 
-        const user = users.find(u => u.id === userId);
-        if (!user) {
+        const [users] = await db.execute(
+            'SELECT * FROM users WHERE id = ?',
+            [userId]
+        );
+
+        if (users.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
             });
         }
 
-        user.name = name;
-        user.age = age;
-        user.medical_history = medical_history;
-        user.guardian_name = guardian_name;
-        user.guardian_contact = guardian_contact;
+        let profile_photo = users[0].profile_photo;
+
+        // Handle profile photo upload
+        if (req.file) {
+            profile_photo = req.file.filename;
+        }
+
+        await db.execute(
+            `UPDATE users SET name = ?, age = ?, medical_history = ?, guardian_name = ?, 
+             guardian_contact = ?, profile_photo = ? WHERE id = ?`,
+            [name, age, medical_history, guardian_name, guardian_contact, profile_photo, userId]
+        );
+
+        // Get updated user
+        const [updatedUsers] = await db.execute(
+            'SELECT * FROM users WHERE id = ?',
+            [userId]
+        );
 
         res.json({
             success: true,
-            message: 'Profile updated successfully'
+            message: 'Profile updated successfully',
+            user: {
+                id: updatedUsers[0].id,
+                name: updatedUsers[0].name,
+                email: updatedUsers[0].email,
+                age: updatedUsers[0].age,
+                medical_history: updatedUsers[0].medical_history,
+                guardian_name: updatedUsers[0].guardian_name,
+                guardian_contact: updatedUsers[0].guardian_contact,
+                profile_photo: updatedUsers[0].profile_photo
+            }
         });
 
     } catch (error) {
@@ -341,17 +1061,24 @@ app.put('/api/users/profile', (req, res) => {
 });
 
 // History Routes
-app.get('/api/history', (req, res) => {
+app.get('/api/history', async (req, res) => {
     try {
         const userId = req.headers['user-id'];
-        const userHistory = history.filter(h => h.user_id === userId);
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User ID required'
+            });
+        }
         
-        // Sort by date (newest first)
-        userHistory.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const [history] = await db.execute(
+            'SELECT * FROM history WHERE user_id = ? ORDER BY created_at DESC',
+            [userId]
+        );
 
         res.json({
             success: true,
-            history: userHistory
+            history: history
         });
 
     } catch (error) {
@@ -363,9 +1090,71 @@ app.get('/api/history', (req, res) => {
     }
 });
 
+// Export history
+app.get('/api/export/history', async (req, res) => {
+    try {
+        const userId = req.headers['user-id'];
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'User ID required'
+            });
+        }
+        
+        const [history] = await db.execute(
+            'SELECT * FROM history WHERE user_id = ? ORDER BY created_at DESC',
+            [userId]
+        );
+        
+        let csvContent = 'Date,Time,Medicine,Dosage,Scheduled Time,Actual Time,Status,Notes\n';
+        history.forEach(record => {
+            const date = new Date(record.created_at);
+            const formattedDate = date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+            const formattedTime = date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+            
+            csvContent += `"${formattedDate}","${formattedTime}","${record.medicine_name}","${record.dosage}","${record.scheduled_time}","${record.actual_time || '-'}","${record.status}","${record.notes || '-'}"\n`;
+        });
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=meditrack-history.csv');
+        res.send(csvContent);
+
+    } catch (error) {
+        console.error('Export error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to export history'
+        });
+    }
+});
+
 // Serve frontend
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
+
+// Error handling middleware
+app.use((error, req, res, next) => {
+    if (error instanceof multer.MulterError) {
+        if (error.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({
+                success: false,
+                message: 'File too large. Maximum size is 10MB.'
+            });
+        }
+    }
+    res.status(500).json({
+        success: false,
+        message: error.message
+    });
 });
 
 // Start server
@@ -373,7 +1162,6 @@ app.listen(PORT, () => {
     console.log(`\n🚀 MediTrack Pro server running on http://localhost:${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
     console.log(`🌐 Frontend: http://localhost:${PORT}/`);
-    console.log(`\n💾 Storage: In-memory (data resets on server restart)`);
-    console.log(`👤 Sample users: ${users.length}`);
-    console.log(`💊 Sample medicines: ${medicines.length}`);
+    console.log(`💾 Database: MySQL connected`);
+    console.log(`⏰ Reminder checker running every 10 seconds`);
 });
