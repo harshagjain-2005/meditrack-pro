@@ -1,4 +1,1659 @@
-// Dashboard functionality for medicines and profile
+// // Dashboard functionality for medicines and profile
+// class DashboardManager {
+//     constructor() {
+//         this.mediaRecorder = null;
+//         this.audioChunks = [];
+//         this.audioBlob = null;
+//         this.isRecording = false;
+//         this.voiceAlertId = null;
+//         this.editingMedicineId = null;
+//         this.setupDashboardEventListeners();
+//     }
+
+//     setupDashboardEventListeners() {
+//         // Add medicine form
+//         const addMedicineForm = document.getElementById('addMedicineForm');
+//         if (addMedicineForm) {
+//             addMedicineForm.addEventListener('submit', (e) => {
+//                 e.preventDefault();
+//                 this.handleAddMedicine();
+//             });
+//         }
+
+//         // Edit medicine form
+//         const editMedicineForm = document.getElementById('editMedicineForm');
+//         if (editMedicineForm) {
+//             editMedicineForm.addEventListener('submit', (e) => {
+//                 e.preventDefault();
+//                 this.handleUpdateMedicine();
+//             });
+//         }
+
+//         // Profile form
+//         const profileForm = document.getElementById('profileForm');
+//         if (profileForm) {
+//             profileForm.addEventListener('submit', (e) => {
+//                 e.preventDefault();
+//                 this.handleUpdateProfile();
+//             });
+//         }
+
+//         // Export history
+//         const exportBtn = document.getElementById('exportHistoryBtn');
+//         if (exportBtn) {
+//             exportBtn.addEventListener('click', () => {
+//                 this.exportHistory();
+//             });
+//         }
+
+//         // File upload previews
+//         const medicinePhotoInput = document.getElementById('medicinePhotoInput');
+//         if (medicinePhotoInput) {
+//             medicinePhotoInput.addEventListener('change', (e) => {
+//                 this.handleMedicinePhotoPreview(e.target.files[0]);
+//             });
+//         }
+
+//         const editMedicinePhotoInput = document.getElementById('editMedicinePhotoInput');
+//         if (editMedicinePhotoInput) {
+//             editMedicinePhotoInput.addEventListener('change', (e) => {
+//                 this.handleEditMedicinePhotoPreview(e.target.files[0]);
+//             });
+//         }
+
+//         const profilePhotoInput = document.getElementById('profilePhotoInput');
+//         if (profilePhotoInput) {
+//             profilePhotoInput.addEventListener('change', (e) => {
+//                 this.handleProfilePhotoPreview(e.target.files[0]);
+//             });
+//         }
+
+//         const voiceFileInput = document.getElementById('voiceFileInput');
+//         if (voiceFileInput) {
+//             voiceFileInput.addEventListener('change', (e) => {
+//                 this.handleVoiceFilePreview(e.target.files[0]);
+//             });
+//         }
+
+//         const editVoiceFileInput = document.getElementById('editVoiceFileInput');
+//         if (editVoiceFileInput) {
+//             editVoiceFileInput.addEventListener('change', (e) => {
+//                 this.handleEditVoiceFilePreview(e.target.files[0]);
+//             });
+//         }
+
+//         // Voice recording setup
+//         this.setupVoiceRecording();
+//         this.setupEditVoiceRecording();
+//     }
+
+//     setupVoiceRecording() {
+//         const voiceAlertType = document.getElementById('voiceAlertType');
+//         const recordingSection = document.getElementById('recordingSection');
+//         const uploadVoiceSection = document.getElementById('uploadVoiceSection');
+
+//         if (voiceAlertType) {
+//             voiceAlertType.addEventListener('change', () => {
+//                 if (recordingSection) recordingSection.style.display = 'none';
+//                 if (uploadVoiceSection) uploadVoiceSection.style.display = 'none';
+//                 this.resetRecordingUI();
+
+//                 if (voiceAlertType.value === 'record') {
+//                     if (recordingSection) recordingSection.style.display = 'block';
+//                 } else if (voiceAlertType.value === 'upload') {
+//                     if (uploadVoiceSection) uploadVoiceSection.style.display = 'block';
+//                 }
+//             });
+
+//             // Recording buttons
+//             const startBtn = document.getElementById('startRecordingBtn');
+//             const stopBtn = document.getElementById('stopRecordingBtn');
+//             const playBtn = document.getElementById('playRecordingBtn');
+//             const saveBtn = document.getElementById('saveRecordingBtn');
+
+//             if (startBtn) {
+//                 startBtn.addEventListener('click', () => {
+//                     this.startRecording();
+//                 });
+//             }
+
+//             if (stopBtn) {
+//                 stopBtn.addEventListener('click', () => {
+//                     this.stopRecording();
+//                 });
+//             }
+
+//             if (playBtn) {
+//                 playBtn.addEventListener('click', () => {
+//                     this.playRecording();
+//                 });
+//             }
+
+//             if (saveBtn) {
+//                 saveBtn.addEventListener('click', () => {
+//                     this.saveRecording();
+//                 });
+//             }
+//         }
+//     }
+
+//     setupEditVoiceRecording() {
+//         const editVoiceAlertType = document.getElementById('editVoiceAlertType');
+//         const editRecordingSection = document.getElementById('editRecordingSection');
+//         const editUploadVoiceSection = document.getElementById('editUploadVoiceSection');
+
+//         if (editVoiceAlertType) {
+//             editVoiceAlertType.addEventListener('change', () => {
+//                 if (editRecordingSection) editRecordingSection.style.display = 'none';
+//                 if (editUploadVoiceSection) editUploadVoiceSection.style.display = 'none';
+//                 this.resetEditRecordingUI();
+
+//                 if (editVoiceAlertType.value === 'record') {
+//                     if (editRecordingSection) editRecordingSection.style.display = 'block';
+//                 } else if (editVoiceAlertType.value === 'upload') {
+//                     if (editUploadVoiceSection) editUploadVoiceSection.style.display = 'block';
+//                 }
+//             });
+
+//             // Edit recording buttons
+//             const editStartBtn = document.getElementById('editStartRecordingBtn');
+//             const editStopBtn = document.getElementById('editStopRecordingBtn');
+//             const editPlayBtn = document.getElementById('editPlayRecordingBtn');
+//             const editSaveBtn = document.getElementById('editSaveRecordingBtn');
+
+//             if (editStartBtn) {
+//                 editStartBtn.addEventListener('click', () => {
+//                     this.startEditRecording();
+//                 });
+//             }
+
+//             if (editStopBtn) {
+//                 editStopBtn.addEventListener('click', () => {
+//                     this.stopEditRecording();
+//                 });
+//             }
+
+//             if (editPlayBtn) {
+//                 editPlayBtn.addEventListener('click', () => {
+//                     this.playEditRecording();
+//                 });
+//             }
+
+//             if (editSaveBtn) {
+//                 editSaveBtn.addEventListener('click', () => {
+//                     this.saveEditRecording();
+//                 });
+//             }
+//         }
+//     }
+
+//     // Recording methods for add medicine
+//     async startRecording() {
+//         try {
+//             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+//                 app.showNotification('Your browser does not support audio recording', 'error');
+//                 return;
+//             }
+
+//             const stream = await navigator.mediaDevices.getUserMedia({ 
+//                 audio: {
+//                     echoCancellation: true,
+//                     noiseSuppression: true,
+//                     sampleRate: 44100
+//                 } 
+//             });
+            
+//             this.mediaRecorder = new MediaRecorder(stream);
+//             this.audioChunks = [];
+
+//             this.mediaRecorder.ondataavailable = (event) => {
+//                 if (event.data.size > 0) {
+//                     this.audioChunks.push(event.data);
+//                 }
+//             };
+
+//             this.mediaRecorder.onstop = () => {
+//                 this.audioBlob = new Blob(this.audioChunks, { 
+//                     type: 'audio/wav' 
+//                 });
+                
+//                 const audioUrl = URL.createObjectURL(this.audioBlob);
+//                 const audioPlayer = document.getElementById('audioPlayer');
+//                 if (audioPlayer) {
+//                     audioPlayer.src = audioUrl;
+//                 }
+                
+//                 const recordedAudio = document.getElementById('recordedAudio');
+//                 if (recordedAudio) {
+//                     recordedAudio.style.display = 'block';
+//                 }
+                
+//                 document.getElementById('playRecordingBtn').disabled = false;
+//                 document.getElementById('saveRecordingBtn').disabled = false;
+
+//                 stream.getTracks().forEach(track => track.stop());
+//             };
+
+//             this.mediaRecorder.start();
+//             this.isRecording = true;
+
+//             const visualizer = document.getElementById('recordingVisualizer');
+//             if (visualizer) {
+//                 visualizer.innerHTML = 
+//                     '<i class="fas fa-circle" style="color: red; animation: blink 1s infinite;"></i> Recording... Speak your reminder message now';
+//             }
+            
+//             document.getElementById('startRecordingBtn').disabled = true;
+//             document.getElementById('stopRecordingBtn').disabled = false;
+
+//         } catch (error) {
+//             console.error('Error accessing microphone:', error);
+//             app.showNotification('Error accessing microphone. Please check permissions.', 'error');
+//         }
+//     }
+
+//     stopRecording() {
+//         if (this.mediaRecorder && this.isRecording) {
+//             this.mediaRecorder.stop();
+//             this.isRecording = false;
+
+//             const visualizer = document.getElementById('recordingVisualizer');
+//             if (visualizer) {
+//                 visualizer.innerHTML = 
+//                     '<i class="fas fa-check-circle" style="color: green;"></i> Recording complete!';
+//             }
+            
+//             document.getElementById('startRecordingBtn').disabled = false;
+//             document.getElementById('stopRecordingBtn').disabled = true;
+//         }
+//     }
+
+//     playRecording() {
+//         const audioPlayer = document.getElementById('audioPlayer');
+//         if (audioPlayer && audioPlayer.src) {
+//             audioPlayer.play();
+//         }
+//     }
+
+//     async saveRecording() {
+//         if (!this.audioBlob) {
+//             app.showNotification('No recording to save. Please record a message first.', 'error');
+//             return;
+//         }
+
+//         try {
+//             const user = app.getCurrentUser();
+//             if (!user) {
+//                 app.showNotification('Please login first', 'error');
+//                 return;
+//             }
+
+//             const alertName = document.getElementById('alertName')?.value || `Voice Alert ${new Date().toLocaleString()}`;
+            
+//             const formData = new FormData();
+//             formData.append('voiceFile', this.audioBlob, `${alertName}.wav`);
+//             formData.append('alertName', alertName);
+
+//             const response = await fetch('/api/voice/upload', {
+//                 method: 'POST',
+//                 headers: {
+//                     'user-id': user.id
+//                 },
+//                 body: formData
+//             });
+
+//             const result = await response.json();
+
+//             if (result.success) {
+//                 app.showNotification('Voice alert saved successfully!', 'success');
+//                 this.voiceAlertId = result.voiceAlert.id;
+//                 this.resetRecordingUI();
+                
+//                 document.getElementById('voiceAlertType').value = 'record';
+                
+//             } else {
+//                 app.showNotification(result.message || 'Failed to save voice alert', 'error');
+//             }
+
+//         } catch (error) {
+//             console.error('Error saving recording:', error);
+//             app.showNotification('Error saving recording. Please try again.', 'error');
+//         }
+//     }
+
+//     resetRecordingUI() {
+//         this.audioBlob = null;
+//         this.audioChunks = [];
+//         const visualizer = document.getElementById('recordingVisualizer');
+//         if (visualizer) {
+//             visualizer.innerHTML = 
+//                 '<i class="fas fa-microphone"></i> Click "Start Recording" to record your voice alert';
+//         }
+        
+//         const recordedAudio = document.getElementById('recordedAudio');
+//         if (recordedAudio) {
+//             recordedAudio.style.display = 'none';
+//         }
+        
+//         document.getElementById('startRecordingBtn').disabled = false;
+//         document.getElementById('stopRecordingBtn').disabled = true;
+//         document.getElementById('playRecordingBtn').disabled = true;
+//         document.getElementById('saveRecordingBtn').disabled = true;
+//     }
+
+//     // Recording methods for edit medicine
+//     async startEditRecording() {
+//         try {
+//             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+//                 app.showNotification('Your browser does not support audio recording', 'error');
+//                 return;
+//             }
+
+//             const stream = await navigator.mediaDevices.getUserMedia({ 
+//                 audio: {
+//                     echoCancellation: true,
+//                     noiseSuppression: true,
+//                     sampleRate: 44100
+//                 } 
+//             });
+            
+//             this.editMediaRecorder = new MediaRecorder(stream);
+//             this.editAudioChunks = [];
+
+//             this.editMediaRecorder.ondataavailable = (event) => {
+//                 if (event.data.size > 0) {
+//                     this.editAudioChunks.push(event.data);
+//                 }
+//             };
+
+//             this.editMediaRecorder.onstop = () => {
+//                 this.editAudioBlob = new Blob(this.editAudioChunks, { 
+//                     type: 'audio/wav' 
+//                 });
+                
+//                 const audioUrl = URL.createObjectURL(this.editAudioBlob);
+//                 const audioPlayer = document.getElementById('editAudioPlayer');
+//                 if (audioPlayer) {
+//                     audioPlayer.src = audioUrl;
+//                 }
+                
+//                 const recordedAudio = document.getElementById('editRecordedAudio');
+//                 if (recordedAudio) {
+//                     recordedAudio.style.display = 'block';
+//                 }
+                
+//                 document.getElementById('editPlayRecordingBtn').disabled = false;
+//                 document.getElementById('editSaveRecordingBtn').disabled = false;
+
+//                 stream.getTracks().forEach(track => track.stop());
+//             };
+
+//             this.editMediaRecorder.start();
+//             this.isEditRecording = true;
+
+//             const visualizer = document.getElementById('editRecordingVisualizer');
+//             if (visualizer) {
+//                 visualizer.innerHTML = 
+//                     '<i class="fas fa-circle" style="color: red; animation: blink 1s infinite;"></i> Recording... Speak your reminder message now';
+//             }
+            
+//             document.getElementById('editStartRecordingBtn').disabled = true;
+//             document.getElementById('editStopRecordingBtn').disabled = false;
+
+//         } catch (error) {
+//             console.error('Error accessing microphone:', error);
+//             app.showNotification('Error accessing microphone. Please check permissions.', 'error');
+//         }
+//     }
+
+//     stopEditRecording() {
+//         if (this.editMediaRecorder && this.isEditRecording) {
+//             this.editMediaRecorder.stop();
+//             this.isEditRecording = false;
+
+//             const visualizer = document.getElementById('editRecordingVisualizer');
+//             if (visualizer) {
+//                 visualizer.innerHTML = 
+//                     '<i class="fas fa-check-circle" style="color: green;"></i> Recording complete!';
+//             }
+            
+//             document.getElementById('editStartRecordingBtn').disabled = false;
+//             document.getElementById('editStopRecordingBtn').disabled = true;
+//         }
+//     }
+
+//     playEditRecording() {
+//         const audioPlayer = document.getElementById('editAudioPlayer');
+//         if (audioPlayer && audioPlayer.src) {
+//             audioPlayer.play();
+//         }
+//     }
+
+//     async saveEditRecording() {
+//         if (!this.editAudioBlob) {
+//             app.showNotification('No recording to save. Please record a message first.', 'error');
+//             return;
+//         }
+
+//         try {
+//             const user = app.getCurrentUser();
+//             if (!user) {
+//                 app.showNotification('Please login first', 'error');
+//                 return;
+//             }
+
+//             const alertName = document.getElementById('editAlertName')?.value || `Voice Alert ${new Date().toLocaleString()}`;
+            
+//             const formData = new FormData();
+//             formData.append('voiceFile', this.editAudioBlob, `${alertName}.wav`);
+//             formData.append('alertName', alertName);
+
+//             const response = await fetch('/api/voice/upload', {
+//                 method: 'POST',
+//                 headers: {
+//                     'user-id': user.id
+//                 },
+//                 body: formData
+//             });
+
+//             const result = await response.json();
+
+//             if (result.success) {
+//                 app.showNotification('Voice alert saved successfully!', 'success');
+//                 this.editVoiceAlertId = result.voiceAlert.id;
+//                 this.resetEditRecordingUI();
+                
+//                 document.getElementById('editVoiceAlertType').value = 'record';
+                
+//             } else {
+//                 app.showNotification(result.message || 'Failed to save voice alert', 'error');
+//             }
+
+//         } catch (error) {
+//             console.error('Error saving recording:', error);
+//             app.showNotification('Error saving recording. Please try again.', 'error');
+//         }
+//     }
+
+//     resetEditRecordingUI() {
+//         this.editAudioBlob = null;
+//         this.editAudioChunks = [];
+//         const visualizer = document.getElementById('editRecordingVisualizer');
+//         if (visualizer) {
+//             visualizer.innerHTML = 
+//                 '<i class="fas fa-microphone"></i> Click "Start Recording" to record your voice alert';
+//         }
+        
+//         const recordedAudio = document.getElementById('editRecordedAudio');
+//         if (recordedAudio) {
+//             recordedAudio.style.display = 'none';
+//         }
+        
+//         document.getElementById('editStartRecordingBtn').disabled = false;
+//         document.getElementById('editStopRecordingBtn').disabled = true;
+//         document.getElementById('editPlayRecordingBtn').disabled = true;
+//         document.getElementById('editSaveRecordingBtn').disabled = true;
+//     }
+
+//     // File preview handlers
+//     handleMedicinePhotoPreview(file) {
+//         if (file) {
+//             const reader = new FileReader();
+//             reader.onload = (e) => {
+//                 const preview = document.getElementById('medicinePhotoPreview');
+//                 if (preview) {
+//                     preview.innerHTML = `
+//                         <img src="${e.target.result}" alt="Medicine Preview" style="max-width: 200px; max-height: 200px; border-radius: var(--radius);">
+//                     `;
+//                 }
+//             };
+//             reader.readAsDataURL(file);
+//         }
+//     }
+
+//     handleEditMedicinePhotoPreview(file) {
+//         if (file) {
+//             const reader = new FileReader();
+//             reader.onload = (e) => {
+//                 const preview = document.getElementById('editMedicinePhotoPreview');
+//                 if (preview) {
+//                     preview.innerHTML = `
+//                         <img src="${e.target.result}" alt="Medicine Preview" style="max-width: 200px; max-height: 200px; border-radius: var(--radius);">
+//                     `;
+//                 }
+//             };
+//             reader.readAsDataURL(file);
+//         }
+//     }
+
+//     handleProfilePhotoPreview(file) {
+//         if (file) {
+//             const reader = new FileReader();
+//             reader.onload = (e) => {
+//                 const preview = document.getElementById('profilePhotoPreview');
+//                 if (preview) {
+//                     preview.innerHTML = `
+//                         <img src="${e.target.result}" alt="Profile Preview" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">
+//                     `;
+//                 }
+//             };
+//             reader.readAsDataURL(file);
+//         }
+//     }
+
+//     handleVoiceFilePreview(file) {
+//         if (file) {
+//             const fileName = document.getElementById('alertName');
+//             if (fileName && !fileName.value) {
+//                 fileName.value = file.name.replace(/\.[^/.]+$/, "");
+//             }
+//             app.showNotification(`Voice file selected: ${file.name}`, 'success');
+//         }
+//     }
+
+//     handleEditVoiceFilePreview(file) {
+//         if (file) {
+//             const fileName = document.getElementById('editAlertName');
+//             if (fileName && !fileName.value) {
+//                 fileName.value = file.name.replace(/\.[^/.]+$/, "");
+//             }
+//             app.showNotification(`Voice file selected: ${file.name}`, 'success');
+//         }
+//     }
+
+//     // Medicine CRUD operations
+// async handleAddMedicine() {
+//     try {
+//         const formData = new FormData();
+//         const user = app.getCurrentUser();
+        
+//         if (!user) {
+//             app.showNotification('Please login first', 'error');
+//             return;
+//         }
+
+//         // Get frequency and times
+//         const frequency = document.getElementById('medicineFrequency').value;
+//         const time1 = document.getElementById('medicineTime1').value;
+//         const time2 = document.getElementById('medicineTime2').value;
+//         const time3 = document.getElementById('medicineTime3').value;
+
+//         if (!time1) {
+//             app.showNotification('Please enter at least one time', 'error');
+//             return;
+//         }
+
+//         // Add basic medicine data with multiple times
+//         formData.append('name', document.getElementById('medicineName').value);
+//         formData.append('dosage', document.getElementById('medicineDosage').value);
+//         formData.append('frequency', frequency);
+//         formData.append('medicineTime1', time1);
+//         formData.append('medicineTime2', time2 || '');
+//         formData.append('medicineTime3', time3 || '');
+//         formData.append('stock', document.getElementById('medicineStock').value || '0');
+//         formData.append('refill_reminder', document.getElementById('medicineRefill').value || '0');
+        
+//         const voiceAlertType = document.getElementById('voiceAlertType').value;
+//         formData.append('voice_alert_type', voiceAlertType);
+        
+//         // Add medicine photo if exists
+//         const medicinePhotoInput = document.getElementById('medicinePhotoInput');
+//         if (medicinePhotoInput && medicinePhotoInput.files[0]) {
+//             formData.append('medicinePhoto', medicinePhotoInput.files[0]);
+//         }
+        
+//         // Add voice file if exists
+//         const voiceFileInput = document.getElementById('voiceFileInput');
+//         if (voiceFileInput && voiceFileInput.files[0]) {
+//             formData.append('voiceFile', voiceFileInput.files[0]);
+//             formData.append('alertName', document.getElementById('alertName').value || `Voice for ${document.getElementById('medicineName').value}`);
+//         }
+
+//         const response = await fetch('/api/medicines', {
+//             method: 'POST',
+//             headers: {
+//                 'user-id': user.id
+//             },
+//             body: formData
+//         });
+
+//         const result = await response.json();
+
+//         if (result.success) {
+//             app.showNotification(`Medicine added successfully with ${result.medicineIds?.length || 1} reminder(s)!`, 'success');
+//             this.resetMedicineForm();
+//             switchContentSection('dashboard-section');
+//             app.loadMedicines(); // Refresh dashboard immediately
+//         } else {
+//             app.showNotification(result.message || 'Failed to add medicine', 'error');
+//         }
+
+//     } catch (error) {
+//         console.error('Error adding medicine:', error);
+//         app.showNotification('Error adding medicine', 'error');
+//     }
+// }
+//     async loadMedicineForEdit(medicineId) {
+//         try {
+//             const user = app.getCurrentUser();
+//             if (!user) {
+//                 app.showNotification('Please login first', 'error');
+//                 return;
+//             }
+
+//             const response = await fetch(`/api/medicines/${medicineId}`, {
+//                 headers: {
+//                     'user-id': user.id
+//                 }
+//             });
+
+//             const result = await response.json();
+
+//             if (result.success) {
+//                 const medicine = result.medicine;
+//                 this.editingMedicineId = medicineId;
+
+//                 // Populate edit form
+//                 document.getElementById('editMedicineName').value = medicine.name;
+//                 document.getElementById('editMedicineDosage').value = medicine.dosage;
+//                 document.getElementById('editMedicineTime').value = medicine.time;
+//                 document.getElementById('editMedicineFrequency').value = medicine.frequency;
+//                 document.getElementById('editMedicineStock').value = medicine.stock;
+//                 document.getElementById('editMedicineRefill').value = medicine.refill_reminder;
+//                 document.getElementById('editVoiceAlertType').value = medicine.voice_alert_type;
+
+//                 // Handle medicine photo preview
+//                 if (medicine.medicine_photo) {
+//                     document.getElementById('editMedicinePhotoPreview').innerHTML = `
+//                         <img src="/uploads/medicine-photos/${medicine.medicine_photo}" alt="Medicine Preview" style="max-width: 200px; max-height: 200px; border-radius: var(--radius);">
+//                     `;
+//                 }
+
+//                 // Show/hide recording sections based on voice alert type
+//                 if (medicine.voice_alert_type === 'record') {
+//                     document.getElementById('editRecordingSection').style.display = 'block';
+//                 } else if (medicine.voice_alert_type === 'upload') {
+//                     document.getElementById('editUploadVoiceSection').style.display = 'block';
+//                 }
+
+//                 // Switch to edit section
+//                 switchContentSection('edit-medicine-section');
+
+//             } else {
+//                 app.showNotification(result.message || 'Failed to load medicine', 'error');
+//             }
+//         } catch (error) {
+//             console.error('Error loading medicine for edit:', error);
+//             app.showNotification('Error loading medicine', 'error');
+//         }
+//     }
+
+//     async handleUpdateMedicine() {
+//         try {
+//             const formData = new FormData();
+//             const user = app.getCurrentUser();
+            
+//             if (!user) {
+//                 app.showNotification('Please login first', 'error');
+//                 return;
+//             }
+
+//             if (!this.editingMedicineId) {
+//                 app.showNotification('No medicine selected for editing', 'error');
+//                 return;
+//             }
+
+//             // Add basic medicine data
+//             formData.append('name', document.getElementById('editMedicineName').value);
+//             formData.append('dosage', document.getElementById('editMedicineDosage').value);
+//             formData.append('time', document.getElementById('editMedicineTime').value);
+//             formData.append('frequency', document.getElementById('editMedicineFrequency').value);
+//             formData.append('stock', document.getElementById('editMedicineStock').value || '0');
+//             formData.append('refill_reminder', document.getElementById('editMedicineRefill').value || '0');
+            
+//             const voiceAlertType = document.getElementById('editVoiceAlertType').value;
+//             formData.append('voice_alert_type', voiceAlertType);
+            
+//             // Add medicine photo if exists
+//             const medicinePhotoInput = document.getElementById('editMedicinePhotoInput');
+//             if (medicinePhotoInput && medicinePhotoInput.files[0]) {
+//                 formData.append('medicinePhoto', medicinePhotoInput.files[0]);
+//             }
+            
+//             // Add voice file if exists
+//             const voiceFileInput = document.getElementById('editVoiceFileInput');
+//             if (voiceFileInput && voiceFileInput.files[0]) {
+//                 formData.append('voiceFile', voiceFileInput.files[0]);
+//                 formData.append('alertName', document.getElementById('editAlertName').value || `Voice for ${document.getElementById('editMedicineName').value}`);
+//             }
+
+//             const response = await fetch(`/api/medicines/${this.editingMedicineId}`, {
+//                 method: 'PUT',
+//                 headers: {
+//                     'user-id': user.id
+//                 },
+//                 body: formData
+//             });
+
+//             const result = await response.json();
+
+//             if (result.success) {
+//                 app.showNotification('Medicine updated successfully!', 'success');
+//                 this.resetEditMedicineForm();
+//                 switchContentSection('dashboard-section');
+//                 app.loadMedicines(); // Refresh dashboard immediately
+//             } else {
+//                 app.showNotification(result.message || 'Failed to update medicine', 'error');
+//             }
+
+//         } catch (error) {
+//             console.error('Error updating medicine:', error);
+//             app.showNotification('Error updating medicine', 'error');
+//         }
+//     }
+
+//     resetMedicineForm() {
+//         const form = document.getElementById('addMedicineForm');
+//         if (form) form.reset();
+        
+//         const preview = document.getElementById('medicinePhotoPreview');
+//         if (preview) {
+//             preview.innerHTML = '<i class="fas fa-pills" style="font-size:48px;color:var(--gray-400);"></i>';
+//         }
+        
+//         const recordingSection = document.getElementById('recordingSection');
+//         if (recordingSection) recordingSection.style.display = 'none';
+        
+//         const uploadVoiceSection = document.getElementById('uploadVoiceSection');
+//         if (uploadVoiceSection) uploadVoiceSection.style.display = 'none';
+        
+//         document.getElementById('voiceAlertType').value = 'default';
+        
+//         this.resetRecordingUI();
+//         this.voiceAlertId = null;
+//     }
+
+//     resetEditMedicineForm() {
+//         const form = document.getElementById('editMedicineForm');
+//         if (form) form.reset();
+        
+//         const preview = document.getElementById('editMedicinePhotoPreview');
+//         if (preview) {
+//             preview.innerHTML = '<i class="fas fa-pills" style="font-size:48px;color:var(--gray-400);"></i>';
+//         }
+        
+//         const recordingSection = document.getElementById('editRecordingSection');
+//         if (recordingSection) recordingSection.style.display = 'none';
+        
+//         const uploadVoiceSection = document.getElementById('editUploadVoiceSection');
+//         if (uploadVoiceSection) uploadVoiceSection.style.display = 'none';
+        
+//         document.getElementById('editVoiceAlertType').value = 'default';
+        
+//         this.resetEditRecordingUI();
+//         this.editVoiceAlertId = null;
+//         this.editingMedicineId = null;
+//     }
+
+//     async handleUpdateProfile() {
+//         try {
+//             const formData = new FormData();
+//             const user = app.getCurrentUser();
+            
+//             if (!user) {
+//                 app.showNotification('Please login first', 'error');
+//                 return;
+//             }
+
+//             formData.append('name', document.getElementById('profileName').value);
+//             formData.append('age', document.getElementById('profileAge').value);
+//             formData.append('medical_history', document.getElementById('profileMedicalHistory').value);
+//             formData.append('guardian_name', document.getElementById('profileGuardianName').value);
+//             formData.append('guardian_contact', document.getElementById('profileGuardianContact').value);
+            
+//             // Add profile photo if exists
+//             const profilePhotoInput = document.getElementById('profilePhotoInput');
+//             if (profilePhotoInput && profilePhotoInput.files[0]) {
+//                 formData.append('profilePhoto', profilePhotoInput.files[0]);
+//             }
+
+//             const response = await fetch('/api/users/profile', {
+//                 method: 'PUT',
+//                 headers: {
+//                     'user-id': user.id
+//                 },
+//                 body: formData
+//             });
+
+//             const result = await response.json();
+
+//             if (result.success) {
+//                 app.showNotification('Profile updated successfully!', 'success');
+//                 // Update current user data
+//                 app.setCurrentUser(result.user);
+//                 this.loadProfileData();
+//             } else {async hand
+//                 app.showNotification(result.message || 'Failed to update profile', 'error');
+//             }
+
+//         } catch (error) {
+//             console.error('Error updating profile:', error);
+//             app.showNotification('Error updating profile: ' + (error.message || 'Please try again'), 'error');
+//         }
+//     }
+
+//     loadProfileData() {
+//         const user = app.getCurrentUser();
+//         if (user) {
+//             document.getElementById('profileName').value = user.name || '';
+//             document.getElementById('profileEmail').value = user.email || '';
+//             document.getElementById('profileAge').value = user.age || '';
+//             document.getElementById('profileMedicalHistory').value = user.medical_history || '';
+//             document.getElementById('profileGuardianName').value = user.guardian_name || '';
+//             document.getElementById('profileGuardianContact').value = user.guardian_contact || '';
+            
+//             // Load profile photo if exists
+//             const preview = document.getElementById('profilePhotoPreview');
+//             if (preview) {
+//                 if (user.profile_photo) {
+//                     preview.innerHTML = `
+//                         <img src="/uploads/profile-photos/${user.profile_photo}" alt="Profile Photo" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">
+//                     `;
+//                 } else {
+//                     preview.innerHTML = `
+//                         <i class="fas fa-user" style="font-size:48px;color:var(--gray-400);"></i>
+//                     `;
+//                 }
+//             }
+//         }
+//     }
+
+//     async exportHistory() {
+//         try {
+//             const user = app.getCurrentUser();
+//             const response = await fetch('/api/export/history', {
+//                 headers: {
+//                     'user-id': user.id
+//                 }
+//             });
+
+//             if (response.ok) {
+//                 const blob = await response.blob();
+//                 const url = window.URL.createObjectURL(blob);
+//                 const a = document.createElement('a');
+//                 a.style.display = 'none';
+//                 a.href = url;
+//                 a.download = 'meditrack-history.csv';
+//                 document.body.appendChild(a);
+//                 a.click();
+//                 window.URL.revokeObjectURL(url);
+//                 document.body.removeChild(a);
+                
+//                 app.showNotification('History exported successfully!', 'success');
+//             } else {
+//                 const error = await response.json();
+//                 app.showNotification(error.message || 'Failed to export history', 'error');
+//             }
+//         } catch (error) {
+//             console.error('Error exporting history:', error);
+//             app.showNotification('Error exporting history', 'error');
+//         }
+//     }
+// }
+
+// // Main application initialization
+// class MediTrackApp {
+//     constructor() {
+//         this.currentUser = null;
+//         this.medicines = [];
+//         this.history = [];
+//         this.reminderInterval = null;
+//         this.currentReminderMedicine = null;
+//         this.reminderLoopInterval = null;
+//         this.dashboardManager = null;
+//         this.lowStockShownToday = false;
+        
+//         this.init();
+//         this.resetDailyAlerts(); // Add this line
+//     }
+
+//     init() {
+//         this.checkAuthentication();
+//         this.setupEventListeners();
+//         this.startReminderChecker();
+//         this.dashboardManager = new DashboardManager();
+//     }
+
+//     checkAuthentication() {
+//         const userData = localStorage.getItem('meditrack_user');
+//         if (userData) {
+//             try {
+//                 this.currentUser = JSON.parse(userData);
+//                 this.showDashboard();
+//             } catch (error) {
+//                 console.error('Error parsing user data:', error);
+//                 this.showLandingPage();
+//             }
+//         } else {
+//             this.showLandingPage();
+//         }
+//     }
+
+//     setupEventListeners() {
+//         // Navigation
+//         document.getElementById('landingLoginBtn').addEventListener('click', () => this.showAuthPage('login'));
+//         document.getElementById('landingRegisterBtn').addEventListener('click', () => this.showAuthPage('register'));
+//         document.getElementById('heroGetStartedBtn').addEventListener('click', () => this.showAuthPage('register'));
+        
+//         // Auth tabs
+//         document.getElementById('loginTab').addEventListener('click', () => this.switchAuthTab('login'));
+//         document.getElementById('registerTab').addEventListener('click', () => this.switchAuthTab('register'));
+
+//         // Menu navigation
+//         document.querySelectorAll('.menu-item').forEach(item => {
+//             item.addEventListener('click', function() {
+//                 const target = this.getAttribute('data-target');
+//                 switchContentSection(target);
+//             });
+//         });
+
+//         // Modal buttons
+//         document.getElementById('markTakenBtn').addEventListener('click', () => this.handleMedicineAction('taken'));
+//         document.getElementById('showCustomRemindBtn').addEventListener('click', () => this.showCustomRemindOptions());
+//         document.getElementById('setCustomReminderBtn').addEventListener('click', () => this.setCustomReminder());
+//         document.getElementById('snoozeBtn').addEventListener('click', () => this.snoozeReminder());
+
+//         // Close modal when clicking outside
+//         document.getElementById('reminderModal').addEventListener('click', (e) => {
+//             if (e.target.id === 'reminderModal') {
+//                 this.hideReminderModal();
+//             }
+//         });
+
+//         // Auth forms
+//         document.getElementById('loginForm').addEventListener('submit', (e) => this.handleLogin(e));
+//         document.getElementById('registerForm').addEventListener('submit', (e) => this.handleRegister(e));
+
+//         // Logout
+//         document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
+//     }
+
+//     showLandingPage() {
+//         this.hideAllPages();
+//         document.getElementById('landingPage').classList.add('active');
+//     }
+
+//     showAuthPage(tab = 'login') {
+//         this.hideAllPages();
+//         document.getElementById('authPage').classList.add('active');
+//         this.switchAuthTab(tab);
+//     }
+
+//     showDashboard() {
+//         this.hideAllPages();
+//         document.getElementById('dashboard').classList.add('active');
+        
+//         if (this.currentUser) {
+//             document.getElementById('userName').textContent = this.currentUser.name;
+//             document.getElementById('userAvatar').textContent = this.currentUser.name.charAt(0).toUpperCase();
+//         }
+        
+//         this.loadDashboardData();
+//     }
+
+//     hideAllPages() {
+//         document.querySelectorAll('.page').forEach(page => {
+//             page.classList.remove('active');
+//         });
+//     }
+
+//     switchAuthTab(tab) {
+//         const loginTab = document.getElementById('loginTab');
+//         const registerTab = document.getElementById('registerTab');
+//         const loginForm = document.getElementById('loginForm');
+//         const registerForm = document.getElementById('registerForm');
+
+//         if (tab === 'login') {
+//             loginTab.classList.add('active');
+//             registerTab.classList.remove('active');
+//             loginForm.style.display = 'block';
+//             registerForm.style.display = 'none';
+//         } else {
+//             registerTab.classList.add('active');
+//             loginTab.classList.remove('active');
+//             loginForm.style.display = 'none';
+//             registerForm.style.display = 'block';
+//         }
+//     }
+
+//     async handleLogin(e) {
+//         e.preventDefault();
+//         const email = document.getElementById('loginEmail').value;
+//         const password = document.getElementById('loginPassword').value;
+
+//         try {
+//             const response = await this.apiCall('/api/auth/login', 'POST', { email, password });
+            
+//             if (response.success) {
+//                 this.currentUser = response.user;
+//                 localStorage.setItem('meditrack_user', JSON.stringify(response.user));
+//                 this.showDashboard();
+//                 this.showNotification('Login successful!', 'success');
+//             } else {
+//                 this.showNotification(response.message, 'error');
+//             }
+//         } catch (error) {
+//             console.error('Login error:', error);
+//             this.showNotification('Login failed. Please try again.', 'error');
+//         }
+//     }
+
+//     async handleRegister(e) {
+//         e.preventDefault();
+//         const name = document.getElementById('registerName').value;
+//         const email = document.getElementById('registerEmail').value;
+//         const password = document.getElementById('registerPassword').value;
+//         const age = document.getElementById('registerAge').value;
+//         const medicalHistory = document.getElementById('registerMedicalHistory').value;
+//         const guardianName = document.getElementById('registerGuardianName').value;
+//         const guardianContact = document.getElementById('registerGuardianContact').value;
+
+//         try {
+//             const response = await this.apiCall('/api/auth/register', 'POST', {
+//                 name,
+//                 email,
+//                 password,
+//                 age,
+//                 medical_history: medicalHistory,
+//                 guardian_name: guardianName,
+//                 guardian_contact: guardianContact
+//             });
+            
+//             if (response.success) {
+//                 this.showNotification('Registration successful! Please login.', 'success');
+//                 this.switchAuthTab('login');
+//                 document.getElementById('registerForm').reset();
+//             } else {
+//                 this.showNotification(result.message, 'error');
+//             }
+//         } catch (error) {
+//             console.error('Registration error:', error);
+//             this.showNotification('Registration failed. Please try again.', 'error');
+//         }
+//     }
+
+//     async loadDashboardData() {
+//         try {
+//             await Promise.all([
+//                 this.loadMedicines(),
+//                 this.loadHistory()
+//             ]);
+//         } catch (error) {
+//             console.error('Error loading dashboard data:', error);
+//         }
+//     }
+
+//     async loadMedicines() {
+//         try {
+//             const response = await this.apiCall('/api/medicines', 'GET');
+//             if (response.success) {
+//                 this.medicines = response.medicines;
+//                 this.updateMedicineTable();
+//                 this.updateSummaryCards();
+//             }
+//         } catch (error) {
+//             console.error('Error loading medicines:', error);
+//         }
+//     }
+
+//     async loadHistory() {
+//         try {
+//             const response = await this.apiCall('/api/history', 'GET');
+//             if (response.success) {
+//                 this.history = response.history || [];
+//                 this.updateHistoryTable();
+//             }
+//         } catch (error) {
+//             console.error('Error loading history:', error);
+//         }
+//     }
+
+//     updateMedicineTable() {
+//         const tableBody = document.getElementById('medicineTableBody');
+//         if (!tableBody) return;
+
+//         tableBody.innerHTML = '';
+
+//         this.medicines.forEach(medicine => {
+//             const row = document.createElement('tr');
+//             const statusBadge = this.getStatusBadge(medicine.status);
+//             const voiceAlert = medicine.voice_alert_type === 'record' ? 'Custom' : 
+//                               medicine.voice_alert_type === 'upload' ? 'Uploaded' : 'Default';
+
+//             row.innerHTML = `
+//                 <td>${medicine.name}</td>
+//                 <td>${medicine.dosage}</td>
+//                 <td>${medicine.time}</td>
+//                 <td>${voiceAlert}</td>
+//                 <td>${statusBadge}</td>
+//                 <td class="action-buttons">
+//                     <button class="btn btn-success btn-sm" onclick="app.markMedicineAsTaken('${medicine.id}')">
+//                         <i class="fas fa-check"></i> Taken
+//                     </button>
+//                     <button class="btn btn-warning btn-sm" onclick="app.editMedicine('${medicine.id}')">
+//                         <i class="fas fa-edit"></i> Edit
+//                     </button>
+//                     <button class="btn btn-danger btn-sm" onclick="app.deleteMedicine('${medicine.id}')">
+//                         <i class="fas fa-trash"></i> Delete
+//                     </button>
+//                 </td>
+//             `;
+//             tableBody.appendChild(row);
+//         });
+//     }
+
+//     updateSummaryCards() {
+//         const takenCount = this.medicines.filter(m => m.status === 'taken').length;
+//         const pendingCount = this.medicines.filter(m => m.status === 'pending').length;
+//         const missedCount = this.medicines.filter(m => m.status === 'missed').length;
+//         const lowStockCount = this.medicines.filter(m => m.stock > 0 && m.stock <= m.refill_reminder).length;
+
+//         document.getElementById('takenCount').textContent = takenCount;
+//         document.getElementById('pendingCount').textContent = pendingCount;
+//         document.getElementById('missedCount').textContent = missedCount;
+//         document.getElementById('lowStockCount').textContent = lowStockCount;
+//     }
+
+//     updateHistoryTable() {
+//         const tableBody = document.getElementById('historyTableBody');
+//         if (!tableBody) return;
+
+//         tableBody.innerHTML = '';
+
+//         this.history.forEach(record => {
+//             const row = document.createElement('tr');
+//             const date = new Date(record.created_at).toLocaleDateString();
+//             const scheduledTime = record.scheduled_time;
+//             const actualTime = record.actual_time || '-';
+//             const statusBadge = this.getStatusBadge(record.status);
+
+//             row.innerHTML = `
+//                 <td>${date}</td>
+//                 <td>${record.medicine_name}</td>
+//                 <td>${record.dosage}</td>
+//                 <td>${scheduledTime}</td>
+//                 <td>${actualTime}</td>
+//                 <td>${statusBadge}</td>
+//                 <td>${record.notes || '-'}</td>
+//             `;
+//             tableBody.appendChild(row);
+//         });
+//     }
+
+//     getStatusBadge(status) {
+//         const badges = {
+//             'taken': '<span class="status-badge status-taken"><i class="fas fa-check-circle"></i> Taken</span>',
+//             'pending': '<span class="status-badge status-pending"><i class="fas fa-clock"></i> Pending</span>',
+//             'missed': '<span class="status-badge status-missed"><i class="fas fa-times-circle"></i> Missed</span>',
+//             'rescheduled': '<span class="status-badge status-pending"><i class="fas fa-clock"></i> Rescheduled</span>'
+//         };
+//         return badges[status] || badges.pending;
+//     }
+
+//     // Reminder System with Looping
+//     startReminderChecker() {
+//         this.reminderInterval = setInterval(() => {
+//             this.checkDueMedicines();
+//         }, 5000);
+//     }
+
+//     class MediTrackApp {
+//     constructor() {
+//         this.currentUser = null;
+//         this.medicines = [];
+//         this.history = [];
+//         this.reminderInterval = null;
+//         this.currentReminderMedicine = null;
+//         this.reminderLoopInterval = null;
+//         this.dashboardManager = null;
+//         this.lowStockShownToday = false; // Add this line
+        
+//         this.init();
+//     }
+// // Frequency time inputs handler
+// // ==================== FREQUENCY SYSTEM ====================
+
+// // Frequency time inputs handler
+// function toggleTimeInputs() {
+//     const frequency = document.getElementById('medicineFrequency').value;
+//     const time2Group = document.getElementById('time2Group');
+//     const time3Group = document.getElementById('time3Group');
+    
+//     // Hide all optional time inputs first
+//     if (time2Group) time2Group.style.display = 'none';
+//     if (time3Group) time3Group.style.display = 'none';
+    
+//     // Show based on frequency
+//     if (frequency === 'twice' || frequency === 'thrice') {
+//         if (time2Group) time2Group.style.display = 'block';
+//     }
+//     if (frequency === 'thrice') {
+//         if (time3Group) time3Group.style.display = 'block';
+//     }
+// }
+
+// // Initialize frequency system when page loads
+// document.addEventListener('DOMContentLoaded', function() {
+//     // Add event listener to frequency dropdown
+//     const frequencySelect = document.getElementById('medicineFrequency');
+//     if (frequencySelect) {
+//         frequencySelect.addEventListener('change', toggleTimeInputs);
+//     }
+    
+//     // Initialize on page load
+//     toggleTimeInputs();
+// });
+
+// // Initialize on page load
+// document.addEventListener('DOMContentLoaded', function() {
+//     toggleTimeInputs();
+// });
+//     // Replace the existing checkDueMedicines method with this:
+//     async checkDueMedicines() {
+//         if (!this.currentUser) return;
+
+//         try {
+//             const response = await this.apiCall('/api/reminders', 'GET');
+//             if (response.success && response.reminders.length > 0) {
+//                 const activeReminder = response.reminders[0];
+//                 if (!this.isReminderActive() || this.currentReminderMedicine?.id !== activeReminder.id) {
+//                     this.showReminderModal(activeReminder);
+//                     this.startVoiceLoop(activeReminder);
+                    
+//                     // Check for low stock and show alert
+//                     if (activeReminder.stock <= activeReminder.refill_reminder && activeReminder.refill_reminder > 0) {
+//                         this.showLowStockAlert(activeReminder);
+//                     }
+//                 }
+//             }
+            
+//             // Also check for any low stock medicines
+//             await this.checkLowStockMedicines();
+            
+//         } catch (error) {
+//             console.error('Error checking reminders:', error);
+//         }
+//     }
+
+//     async checkLowStockMedicines() {
+//         try {
+//             const response = await this.apiCall('/api/medicines', 'GET');
+//             if (response.success) {
+//                 const lowStockMedicines = response.medicines.filter(med => 
+//                     med.stock <= med.refill_reminder && med.refill_reminder > 0 && med.stock > 0
+//                 );
+                
+//                 if (lowStockMedicines.length > 0 && !this.lowStockShownToday) {
+//                     this.showLowStockNotification(lowStockMedicines);
+//                     this.lowStockShownToday = true;
+//                 }
+//             }
+//         } catch (error) {
+//             console.error('Error checking low stock:', error);
+//         }
+//     }
+
+//     showLowStockAlert(medicine) {
+//         const alertHTML = `
+//             <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin: 10px 0;">
+//                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+//                     <i class="fas fa-exclamation-triangle" style="color: #f39c12;"></i>
+//                     <strong style="color: #856404;">Low Stock Alert</strong>
+//                 </div>
+//                 <p style="margin: 0; color: #856404;">
+//                     <strong>${medicine.name}</strong> is running low! Only <strong>${medicine.stock}</strong> doses remaining.
+//                 </p>
+//             </div>
+//         `;
+        
+//         // Add to reminder modal
+//         const reminderContent = document.getElementById('reminderContent');
+//         if (reminderContent) {
+//             reminderContent.insertAdjacentHTML('beforeend', alertHTML);
+//         }
+//     }
+
+//     showLowStockNotification(medicines) {
+//         const medicineNames = medicines.map(med => med.name).join(', ');
+//         this.showNotification(
+//             `Low stock alert: ${medicineNames} are running low!`, 
+//             'warning'
+//         );
+//     }
+
+
+//     isReminderActive() {
+//         return document.getElementById('reminderModal').classList.contains('active');
+//     }
+
+//     showReminderModal(medicine) {
+//         const modal = document.getElementById('reminderModal');
+//         const content = document.getElementById('reminderContent');
+//         const customRemindSection = document.getElementById('customRemindLater');
+        
+//         customRemindSection.style.display = 'none';
+        
+//         content.innerHTML = `
+//             <div style="text-align: center; padding: 20px 0;">
+//                 <i class="fas fa-bell" style="font-size: 3rem; color: var(--warning); margin-bottom: 16px;"></i>
+//                 <h3 style="margin-bottom: 8px; color: var(--gray-900);">Time to take your medicine!</h3>
+//                 <p style="font-size: 1.2rem; color: var(--gray-700); margin-bottom: 8px;">
+//                     <strong>${medicine.name}</strong> - ${medicine.dosage}
+//                 </p>
+//                 <p style="color: var(--gray-600);">Scheduled for: ${medicine.time}</p>
+//                 <p style="color: var(--gray-500); font-size: 0.9rem; margin-top: 10px;">
+//                     <i class="fas fa-info-circle"></i> Voice reminder will repeat every 30 seconds
+//                 </p>
+//             </div>
+//         `;
+
+//         modal.classList.add('active');
+//         this.currentReminderMedicine = medicine;
+//     }
+
+//     startVoiceLoop(medicine) {
+//         if (this.reminderLoopInterval) {
+//             clearInterval(this.reminderLoopInterval);
+//         }
+
+//         this.playVoiceAlert(medicine);
+
+//         this.reminderLoopInterval = setInterval(() => {
+//             if (this.isReminderActive() && this.currentReminderMedicine?.id === medicine.id) {
+//                 this.playVoiceAlert(medicine);
+//             } else {
+//                 clearInterval(this.reminderLoopInterval);
+//                 this.reminderLoopInterval = null;
+//             }
+//         }, 30000);
+//     }
+
+//     hideReminderModal() {
+//         document.getElementById('reminderModal').classList.remove('active');
+        
+//         if (this.reminderLoopInterval) {
+//             clearInterval(this.reminderLoopInterval);
+//             this.reminderLoopInterval = null;
+//         }
+        
+//         if (this.currentReminderMedicine) {
+//             this.apiCall(`/api/reminders/${this.currentReminderMedicine.id}`, 'DELETE')
+//                 .catch(error => console.error('Error clearing reminder:', error));
+//         }
+        
+//         this.currentReminderMedicine = null;
+//     }
+
+//     playVoiceAlert(medicine) {
+//         if ('speechSynthesis' in window) {
+//             speechSynthesis.cancel();
+            
+//             const utterance = new SpeechSynthesisUtterance(
+//                 `Reminder: Time to take your ${medicine.name}, dosage: ${medicine.dosage}. Please take your medicine now.`
+//             );
+            
+//             utterance.rate = 0.9;
+//             utterance.pitch = 1;
+//             utterance.volume = 1;
+            
+//             speechSynthesis.speak(utterance);
+//         }
+//     }
+
+//     async handleMedicineAction(action) {
+//         if (!this.currentReminderMedicine) return;
+
+//         if (action === 'taken') {
+//             await this.markMedicineAsTaken(this.currentReminderMedicine.id);
+//         }
+
+//         this.hideReminderModal();
+//     }
+
+//     showCustomRemindOptions() {
+//         const customRemindSection = document.getElementById('customRemindLater');
+//         customRemindSection.style.display = 'block';
+//     }
+
+//     async setCustomReminder() {
+//         const minutesInput = document.getElementById('customMinutes');
+//         const minutes = parseInt(minutesInput.value);
+        
+//         if (!minutes || minutes < 1) {
+//             this.showNotification('Please enter a valid number of minutes', 'error');
+//             return;
+//         }
+
+//         await this.rescheduleReminder(minutes);
+//     }
+
+//     async rescheduleReminder(minutes) {
+//         if (!this.currentReminderMedicine) return;
+
+//         try {
+//             await this.apiCall(`/api/medicines/${this.currentReminderMedicine.id}/reschedule`, 'POST', {
+//                 remindInMinutes: minutes
+//             });
+
+//             this.hideReminderModal();
+//             this.showNotification(`Reminder set for ${minutes} minutes from now`, 'success');
+//         } catch (error) {
+//             console.error('Error rescheduling:', error);
+//             this.showNotification('Error rescheduling reminder', 'error');
+//         }
+//     }
+
+//     snoozeReminder() {
+//         this.rescheduleReminder(5);
+//     }
+
+//     // API Methods
+//     async apiCall(endpoint, method = 'GET', data = null) {
+//         const url = `http://localhost:5000${endpoint}`;
+//         const options = {
+//             method,
+//             headers: {
+//                 'Content-Type': 'application/json',
+//                 'user-id': this.currentUser?.id || ''
+//             }
+//         };
+
+//         if (data && (method === 'POST' || method === 'PUT')) {
+//             options.body = JSON.stringify(data);
+//         }
+
+//         const response = await fetch(url, options);
+//         const result = await response.json();
+
+//         if (!response.ok) {
+//             throw new Error(result.message || 'API call failed');
+//         }
+
+//         return result;
+//     }
+
+//     // Utility Methods
+//     showNotification(message, type = 'info') {
+//         alert(`${type.toUpperCase()}: ${message}`);
+//     }
+
+//     getCurrentUser() {
+//         return this.currentUser;
+//     }
+
+//     setCurrentUser(user) {
+//         this.currentUser = user;
+//         localStorage.setItem('meditrack_user', JSON.stringify(user));
+//     }
+
+//     logout() {
+//         localStorage.removeItem('meditrack_user');
+//         this.currentUser = null;
+//         this.medicines = [];
+//         this.history = [];
+
+//         if (this.reminderInterval) {
+//             clearInterval(this.reminderInterval);
+//         }
+        
+//         if (this.reminderLoopInterval) {
+//             clearInterval(this.reminderLoopInterval);
+//         }
+
+//         this.showLandingPage();
+//     }
+// }
+
+// // Global app instance
+// const app = new MediTrackApp();
+
+// // Utility functions for global access
+// function switchContentSection(sectionId) {
+//     // Hide all sections
+//     document.querySelectorAll('.content-section').forEach(section => {
+//         section.classList.remove('active');
+//     });
+
+//     // Remove active class from all menu items
+//     document.querySelectorAll('.menu-item').forEach(item => {
+//         item.classList.remove('active');
+//     });
+
+//     // Show target section
+//     document.getElementById(sectionId).classList.add('active');
+
+//     // Activate corresponding menu item
+//     const menuItem = document.querySelector(`.menu-item[data-target="${sectionId}"]`);
+//     if (menuItem) {
+//         menuItem.classList.add('active');
+//     }
+
+//     // Load section-specific data
+//     if (sectionId === 'dashboard-section') {
+//         app.loadMedicines();
+//     } else if (sectionId === 'history-section') {
+//         app.loadHistory();
+//     } else if (sectionId === 'profile-section') {
+//         app.dashboardManager.loadProfileData();
+//     }
+// }
+
+// // Make methods globally available
+// window.app = app;
+
+// // Medicine actions
+// app.markMedicineAsTaken = async function(medicineId) {
+//     try {
+//         // Disable button immediately to prevent multiple clicks
+//         const buttons = document.querySelectorAll(`button[onclick*="${medicineId}"]`);
+//         buttons.forEach(btn => {
+//             btn.disabled = true;
+//             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+//         });
+
+//         const notes = prompt('Add any notes (optional):') || '';
+        
+//         const response = await app.apiCall(`/api/medicines/${medicineId}/taken`, 'POST', {
+//             notes
+//         });
+
+//         if (response.success) {
+//             app.showNotification('Medicine marked as taken! Stock updated.', 'success');
+//             await app.loadMedicines();
+//             await app.loadHistory();
+//         } else {
+//             app.showNotification(response.message, 'error');
+//         }
+
+//     } catch (error) {
+//         console.error('Error marking medicine as taken:', error);
+//         app.showNotification('Failed to update medicine', 'error');
+//     } finally {
+//         // Re-enable buttons after processing
+//         setTimeout(() => {
+//             const buttons = document.querySelectorAll(`button[onclick*="${medicineId}"]`);
+//             buttons.forEach(btn => {
+//                 btn.disabled = false;
+//                 btn.innerHTML = '<i class="fas fa-check"></i> Taken';
+//             });
+//         }, 2000);
+//     }
+// };
+
+// app.editMedicine = async function(medicineId) {
+//     app.dashboardManager.loadMedicineForEdit(medicineId);
+// };
+
+// app.deleteMedicine = async function(medicineId) {
+//     if (!confirm('Are you sure you want to delete this medicine?')) {
+//         return;
+//     }
+
+//     try {
+//         await app.apiCall(`/api/medicines/${medicineId}`, 'DELETE');
+        
+//         app.showNotification('Medicine deleted successfully!', 'success');
+//         await app.loadMedicines();
+
+//     } catch (error) {
+//         console.error('Error deleting medicine:', error);
+//         app.showNotification('Failed to delete medicine', 'error');
+//     }
+// };
+// // ==================== FREQUENCY SYSTEM ====================
+
+// // Frequency time inputs handler
+// function toggleTimeInputs() {
+//     const frequency = document.getElementById('medicineFrequency').value;
+//     const time2Group = document.getElementById('time2Group');
+//     const time3Group = document.getElementById('time3Group');
+    
+//     // Hide all optional time inputs first
+//     if (time2Group) time2Group.style.display = 'none';
+//     if (time3Group) time3Group.style.display = 'none';
+    
+//     // Show based on frequency
+//     if (frequency === 'twice' || frequency === 'thrice') {
+//         if (time2Group) time2Group.style.display = 'block';
+//     }
+//     if (frequency === 'thrice') {
+//         if (time3Group) time3Group.style.display = 'block';
+//     }
+// }
+
+// // Initialize frequency system when page loads
+// document.addEventListener('DOMContentLoaded', function() {
+//     // Add event listener to frequency dropdown
+//     const frequencySelect = document.getElementById('medicineFrequency');
+//     if (frequencySelect) {
+//         frequencySelect.addEventListener('change', toggleTimeInputs);
+//     }
+    
+//     // Initialize on page load
+//     toggleTimeInputs();
+// });
+
+// // Setup menu navigation
+// document.addEventListener('DOMContentLoaded', function() {
+//     document.querySelectorAll('.menu-item').forEach(item => {
+//         item.addEventListener('click', function() {
+//             const target = this.getAttribute('data-target');
+//             switchContentSection(target);
+//         });
+//     });
+// });
+
+// Enhanced Dashboard functionality for medicines and profile
 class DashboardManager {
     constructor() {
         this.mediaRecorder = null;
@@ -7,6 +1662,13 @@ class DashboardManager {
         this.isRecording = false;
         this.voiceAlertId = null;
         this.editingMedicineId = null;
+        
+        this.editMediaRecorder = null;
+        this.editAudioChunks = [];
+        this.editAudioBlob = null;
+        this.isEditRecording = false;
+        this.editVoiceAlertId = null;
+        
         this.setupDashboardEventListeners();
     }
 
@@ -46,7 +1708,23 @@ class DashboardManager {
             });
         }
 
+        // Apply history filter
+        const applyFilterBtn = document.getElementById('applyHistoryFilter');
+        if (applyFilterBtn) {
+            applyFilterBtn.addEventListener('click', () => {
+                this.applyHistoryFilters();
+            });
+        }
+
         // File upload previews
+        this.setupFileUploadListeners();
+        
+        // Voice recording setup
+        this.setupVoiceRecording();
+        this.setupEditVoiceRecording();
+    }
+
+    setupFileUploadListeners() {
         const medicinePhotoInput = document.getElementById('medicinePhotoInput');
         if (medicinePhotoInput) {
             medicinePhotoInput.addEventListener('change', (e) => {
@@ -81,109 +1759,41 @@ class DashboardManager {
                 this.handleEditVoiceFilePreview(e.target.files[0]);
             });
         }
-
-        // Voice recording setup
-        this.setupVoiceRecording();
-        this.setupEditVoiceRecording();
     }
 
     setupVoiceRecording() {
         const voiceAlertType = document.getElementById('voiceAlertType');
-        const recordingSection = document.getElementById('recordingSection');
-        const uploadVoiceSection = document.getElementById('uploadVoiceSection');
-
         if (voiceAlertType) {
             voiceAlertType.addEventListener('change', () => {
-                if (recordingSection) recordingSection.style.display = 'none';
-                if (uploadVoiceSection) uploadVoiceSection.style.display = 'none';
-                this.resetRecordingUI();
-
-                if (voiceAlertType.value === 'record') {
-                    if (recordingSection) recordingSection.style.display = 'block';
-                } else if (voiceAlertType.value === 'upload') {
-                    if (uploadVoiceSection) uploadVoiceSection.style.display = 'block';
-                }
+                this.handleVoiceTypeChange('add');
             });
-
-            // Recording buttons
-            const startBtn = document.getElementById('startRecordingBtn');
-            const stopBtn = document.getElementById('stopRecordingBtn');
-            const playBtn = document.getElementById('playRecordingBtn');
-            const saveBtn = document.getElementById('saveRecordingBtn');
-
-            if (startBtn) {
-                startBtn.addEventListener('click', () => {
-                    this.startRecording();
-                });
-            }
-
-            if (stopBtn) {
-                stopBtn.addEventListener('click', () => {
-                    this.stopRecording();
-                });
-            }
-
-            if (playBtn) {
-                playBtn.addEventListener('click', () => {
-                    this.playRecording();
-                });
-            }
-
-            if (saveBtn) {
-                saveBtn.addEventListener('click', () => {
-                    this.saveRecording();
-                });
-            }
         }
     }
 
     setupEditVoiceRecording() {
         const editVoiceAlertType = document.getElementById('editVoiceAlertType');
-        const editRecordingSection = document.getElementById('editRecordingSection');
-        const editUploadVoiceSection = document.getElementById('editUploadVoiceSection');
-
         if (editVoiceAlertType) {
             editVoiceAlertType.addEventListener('change', () => {
-                if (editRecordingSection) editRecordingSection.style.display = 'none';
-                if (editUploadVoiceSection) editUploadVoiceSection.style.display = 'none';
-                this.resetEditRecordingUI();
-
-                if (editVoiceAlertType.value === 'record') {
-                    if (editRecordingSection) editRecordingSection.style.display = 'block';
-                } else if (editVoiceAlertType.value === 'upload') {
-                    if (editUploadVoiceSection) editUploadVoiceSection.style.display = 'block';
-                }
+                this.handleVoiceTypeChange('edit');
             });
+        }
+    }
 
-            // Edit recording buttons
-            const editStartBtn = document.getElementById('editStartRecordingBtn');
-            const editStopBtn = document.getElementById('editStopRecordingBtn');
-            const editPlayBtn = document.getElementById('editPlayRecordingBtn');
-            const editSaveBtn = document.getElementById('editSaveRecordingBtn');
+    handleVoiceTypeChange(type) {
+        const prefix = type === 'edit' ? 'edit' : '';
+        const recordingSection = document.getElementById(`${prefix}RecordingSection`);
+        const uploadVoiceSection = document.getElementById(`${prefix}UploadVoiceSection`);
 
-            if (editStartBtn) {
-                editStartBtn.addEventListener('click', () => {
-                    this.startEditRecording();
-                });
-            }
+        if (recordingSection) recordingSection.style.display = 'none';
+        if (uploadVoiceSection) uploadVoiceSection.style.display = 'none';
 
-            if (editStopBtn) {
-                editStopBtn.addEventListener('click', () => {
-                    this.stopEditRecording();
-                });
-            }
-
-            if (editPlayBtn) {
-                editPlayBtn.addEventListener('click', () => {
-                    this.playEditRecording();
-                });
-            }
-
-            if (editSaveBtn) {
-                editSaveBtn.addEventListener('click', () => {
-                    this.saveEditRecording();
-                });
-            }
+        const voiceType = document.getElementById(`${prefix}VoiceAlertType`).value;
+        
+        if (voiceType === 'record') {
+            if (recordingSection) recordingSection.style.display = 'block';
+            this.resetRecordingUI(type);
+        } else if (voiceType === 'upload') {
+            if (uploadVoiceSection) uploadVoiceSection.style.display = 'block';
         }
     }
 
@@ -191,7 +1801,7 @@ class DashboardManager {
     async startRecording() {
         try {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                app.showNotification('Your browser does not support audio recording', 'error');
+                this.showNotification('Your browser does not support audio recording', 'error');
                 return;
             }
 
@@ -248,7 +1858,7 @@ class DashboardManager {
 
         } catch (error) {
             console.error('Error accessing microphone:', error);
-            app.showNotification('Error accessing microphone. Please check permissions.', 'error');
+            this.showNotification('Error accessing microphone. Please check permissions.', 'error');
         }
     }
 
@@ -277,14 +1887,14 @@ class DashboardManager {
 
     async saveRecording() {
         if (!this.audioBlob) {
-            app.showNotification('No recording to save. Please record a message first.', 'error');
+            this.showNotification('No recording to save. Please record a message first.', 'error');
             return;
         }
 
         try {
-            const user = app.getCurrentUser();
+            const user = this.getCurrentUser();
             if (!user) {
-                app.showNotification('Please login first', 'error');
+                this.showNotification('Please login first', 'error');
                 return;
             }
 
@@ -294,7 +1904,7 @@ class DashboardManager {
             formData.append('voiceFile', this.audioBlob, `${alertName}.wav`);
             formData.append('alertName', alertName);
 
-            const response = await fetch('/api/voice/upload', {
+            const response = await fetch('http://localhost:5000/api/voice/upload', {
                 method: 'POST',
                 headers: {
                     'user-id': user.id
@@ -305,19 +1915,19 @@ class DashboardManager {
             const result = await response.json();
 
             if (result.success) {
-                app.showNotification('Voice alert saved successfully!', 'success');
+                this.showNotification('Voice alert saved successfully!', 'success');
                 this.voiceAlertId = result.voiceAlert.id;
                 this.resetRecordingUI();
                 
                 document.getElementById('voiceAlertType').value = 'record';
                 
             } else {
-                app.showNotification(result.message || 'Failed to save voice alert', 'error');
+                this.showNotification(result.message || 'Failed to save voice alert', 'error');
             }
 
         } catch (error) {
             console.error('Error saving recording:', error);
-            app.showNotification('Error saving recording. Please try again.', 'error');
+            this.showNotification('Error saving recording. Please try again.', 'error');
         }
     }
 
@@ -345,7 +1955,7 @@ class DashboardManager {
     async startEditRecording() {
         try {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                app.showNotification('Your browser does not support audio recording', 'error');
+                this.showNotification('Your browser does not support audio recording', 'error');
                 return;
             }
 
@@ -402,7 +2012,7 @@ class DashboardManager {
 
         } catch (error) {
             console.error('Error accessing microphone:', error);
-            app.showNotification('Error accessing microphone. Please check permissions.', 'error');
+            this.showNotification('Error accessing microphone. Please check permissions.', 'error');
         }
     }
 
@@ -431,14 +2041,14 @@ class DashboardManager {
 
     async saveEditRecording() {
         if (!this.editAudioBlob) {
-            app.showNotification('No recording to save. Please record a message first.', 'error');
+            this.showNotification('No recording to save. Please record a message first.', 'error');
             return;
         }
 
         try {
-            const user = app.getCurrentUser();
+            const user = this.getCurrentUser();
             if (!user) {
-                app.showNotification('Please login first', 'error');
+                this.showNotification('Please login first', 'error');
                 return;
             }
 
@@ -448,7 +2058,7 @@ class DashboardManager {
             formData.append('voiceFile', this.editAudioBlob, `${alertName}.wav`);
             formData.append('alertName', alertName);
 
-            const response = await fetch('/api/voice/upload', {
+            const response = await fetch('http://localhost:5000/api/voice/upload', {
                 method: 'POST',
                 headers: {
                     'user-id': user.id
@@ -459,19 +2069,19 @@ class DashboardManager {
             const result = await response.json();
 
             if (result.success) {
-                app.showNotification('Voice alert saved successfully!', 'success');
+                this.showNotification('Voice alert saved successfully!', 'success');
                 this.editVoiceAlertId = result.voiceAlert.id;
                 this.resetEditRecordingUI();
                 
                 document.getElementById('editVoiceAlertType').value = 'record';
                 
             } else {
-                app.showNotification(result.message || 'Failed to save voice alert', 'error');
+                this.showNotification(result.message || 'Failed to save voice alert', 'error');
             }
 
         } catch (error) {
             console.error('Error saving recording:', error);
-            app.showNotification('Error saving recording. Please try again.', 'error');
+            this.showNotification('Error saving recording. Please try again.', 'error');
         }
     }
 
@@ -503,7 +2113,8 @@ class DashboardManager {
                 const preview = document.getElementById('medicinePhotoPreview');
                 if (preview) {
                     preview.innerHTML = `
-                        <img src="${e.target.result}" alt="Medicine Preview" style="max-width: 200px; max-height: 200px; border-radius: var(--radius);">
+                        <img src="${e.target.result}" alt="Medicine Preview" style="max-width: 200px; max-height: 200px; border-radius: var(--radius); border: 1px solid var(--gray-200);">
+                        <p style="margin-top: 8px; color: var(--gray-600); font-size: 12px;">${file.name}</p>
                     `;
                 }
             };
@@ -518,7 +2129,8 @@ class DashboardManager {
                 const preview = document.getElementById('editMedicinePhotoPreview');
                 if (preview) {
                     preview.innerHTML = `
-                        <img src="${e.target.result}" alt="Medicine Preview" style="max-width: 200px; max-height: 200px; border-radius: var(--radius);">
+                        <img src="${e.target.result}" alt="Medicine Preview" style="max-width: 200px; max-height: 200px; border-radius: var(--radius); border: 1px solid var(--gray-200);">
+                        <p style="margin-top: 8px; color: var(--gray-600); font-size: 12px;">${file.name}</p>
                     `;
                 }
             };
@@ -533,7 +2145,8 @@ class DashboardManager {
                 const preview = document.getElementById('profilePhotoPreview');
                 if (preview) {
                     preview.innerHTML = `
-                        <img src="${e.target.result}" alt="Profile Preview" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">
+                        <img src="${e.target.result}" alt="Profile Preview" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary);">
+                        <p style="margin-top: 8px; color: var(--gray-600); font-size: 12px;">${file.name}</p>
                     `;
                 }
             };
@@ -547,7 +2160,7 @@ class DashboardManager {
             if (fileName && !fileName.value) {
                 fileName.value = file.name.replace(/\.[^/.]+$/, "");
             }
-            app.showNotification(`Voice file selected: ${file.name}`, 'success');
+            this.showNotification(`Voice file selected: ${file.name}`, 'success');
         }
     }
 
@@ -557,7 +2170,7 @@ class DashboardManager {
             if (fileName && !fileName.value) {
                 fileName.value = file.name.replace(/\.[^/.]+$/, "");
             }
-            app.showNotification(`Voice file selected: ${file.name}`, 'success');
+            this.showNotification(`Voice file selected: ${file.name}`, 'success');
         }
     }
 
@@ -565,18 +2178,31 @@ class DashboardManager {
     async handleAddMedicine() {
         try {
             const formData = new FormData();
-            const user = app.getCurrentUser();
+            const user = this.getCurrentUser();
             
             if (!user) {
-                app.showNotification('Please login first', 'error');
+                this.showNotification('Please login first', 'error');
                 return;
             }
 
-            // Add basic medicine data
+            // Get frequency and times
+            const frequency = document.getElementById('medicineFrequency').value;
+            const time1 = document.getElementById('medicineTime1').value;
+            const time2 = document.getElementById('medicineTime2').value;
+            const time3 = document.getElementById('medicineTime3').value;
+
+            if (!time1) {
+                this.showNotification('Please enter at least one time', 'error');
+                return;
+            }
+
+            // Add basic medicine data with multiple times
             formData.append('name', document.getElementById('medicineName').value);
             formData.append('dosage', document.getElementById('medicineDosage').value);
-            formData.append('time', document.getElementById('medicineTime').value);
-            formData.append('frequency', document.getElementById('medicineFrequency').value);
+            formData.append('frequency', frequency);
+            formData.append('medicineTime1', time1);
+            formData.append('medicineTime2', time2 || '');
+            formData.append('medicineTime3', time3 || '');
             formData.append('stock', document.getElementById('medicineStock').value || '0');
             formData.append('refill_reminder', document.getElementById('medicineRefill').value || '0');
             
@@ -596,7 +2222,12 @@ class DashboardManager {
                 formData.append('alertName', document.getElementById('alertName').value || `Voice for ${document.getElementById('medicineName').value}`);
             }
 
-            const response = await fetch('/api/medicines', {
+            const btn = document.querySelector('#addMedicineForm button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            btn.disabled = true;
+
+            const response = await fetch('http://localhost:5000/api/medicines', {
                 method: 'POST',
                 headers: {
                     'user-id': user.id
@@ -607,29 +2238,37 @@ class DashboardManager {
             const result = await response.json();
 
             if (result.success) {
-                app.showNotification('Medicine added successfully!', 'success');
+                this.showNotification(`Medicine added successfully with ${result.medicineIds?.length || 1} reminder(s)!`, 'success');
                 this.resetMedicineForm();
                 switchContentSection('dashboard-section');
-                app.loadMedicines(); // Refresh dashboard immediately
+                if (window.app && window.app.loadMedicines) {
+                    window.app.loadMedicines(); // Refresh dashboard immediately
+                }
             } else {
-                app.showNotification(result.message || 'Failed to add medicine', 'error');
+                this.showNotification(result.message || 'Failed to add medicine', 'error');
             }
 
         } catch (error) {
             console.error('Error adding medicine:', error);
-            app.showNotification('Error adding medicine', 'error');
+            this.showNotification('Error adding medicine. Please try again.', 'error');
+        } finally {
+            const btn = document.querySelector('#addMedicineForm button[type="submit"]');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-save"></i> Save Medicine';
+                btn.disabled = false;
+            }
         }
     }
 
     async loadMedicineForEdit(medicineId) {
         try {
-            const user = app.getCurrentUser();
+            const user = this.getCurrentUser();
             if (!user) {
-                app.showNotification('Please login first', 'error');
+                this.showNotification('Please login first', 'error');
                 return;
             }
 
-            const response = await fetch(`/api/medicines/${medicineId}`, {
+            const response = await fetch(`http://localhost:5000/api/medicines/${medicineId}`, {
                 headers: {
                     'user-id': user.id
                 }
@@ -642,6 +2281,7 @@ class DashboardManager {
                 this.editingMedicineId = medicineId;
 
                 // Populate edit form
+                document.getElementById('editMedicineId').value = medicine.id;
                 document.getElementById('editMedicineName').value = medicine.name;
                 document.getElementById('editMedicineDosage').value = medicine.dosage;
                 document.getElementById('editMedicineTime').value = medicine.time;
@@ -653,41 +2293,37 @@ class DashboardManager {
                 // Handle medicine photo preview
                 if (medicine.medicine_photo) {
                     document.getElementById('editMedicinePhotoPreview').innerHTML = `
-                        <img src="/uploads/medicine-photos/${medicine.medicine_photo}" alt="Medicine Preview" style="max-width: 200px; max-height: 200px; border-radius: var(--radius);">
+                        <img src="http://localhost:5000/uploads/medicine-photos/${medicine.medicine_photo}" alt="Medicine Preview" style="max-width: 200px; max-height: 200px; border-radius: var(--radius); border: 1px solid var(--gray-200);">
                     `;
                 }
 
                 // Show/hide recording sections based on voice alert type
-                if (medicine.voice_alert_type === 'record') {
-                    document.getElementById('editRecordingSection').style.display = 'block';
-                } else if (medicine.voice_alert_type === 'upload') {
-                    document.getElementById('editUploadVoiceSection').style.display = 'block';
-                }
+                this.handleVoiceTypeChange('edit');
 
                 // Switch to edit section
                 switchContentSection('edit-medicine-section');
 
             } else {
-                app.showNotification(result.message || 'Failed to load medicine', 'error');
+                this.showNotification(result.message || 'Failed to load medicine', 'error');
             }
         } catch (error) {
             console.error('Error loading medicine for edit:', error);
-            app.showNotification('Error loading medicine', 'error');
+            this.showNotification('Error loading medicine', 'error');
         }
     }
 
     async handleUpdateMedicine() {
         try {
             const formData = new FormData();
-            const user = app.getCurrentUser();
+            const user = this.getCurrentUser();
             
             if (!user) {
-                app.showNotification('Please login first', 'error');
+                this.showNotification('Please login first', 'error');
                 return;
             }
 
             if (!this.editingMedicineId) {
-                app.showNotification('No medicine selected for editing', 'error');
+                this.showNotification('No medicine selected for editing', 'error');
                 return;
             }
 
@@ -715,7 +2351,12 @@ class DashboardManager {
                 formData.append('alertName', document.getElementById('editAlertName').value || `Voice for ${document.getElementById('editMedicineName').value}`);
             }
 
-            const response = await fetch(`/api/medicines/${this.editingMedicineId}`, {
+            const btn = document.querySelector('#editMedicineForm button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+            btn.disabled = true;
+
+            const response = await fetch(`http://localhost:5000/api/medicines/${this.editingMedicineId}`, {
                 method: 'PUT',
                 headers: {
                     'user-id': user.id
@@ -726,17 +2367,25 @@ class DashboardManager {
             const result = await response.json();
 
             if (result.success) {
-                app.showNotification('Medicine updated successfully!', 'success');
+                this.showNotification('Medicine updated successfully!', 'success');
                 this.resetEditMedicineForm();
                 switchContentSection('dashboard-section');
-                app.loadMedicines(); // Refresh dashboard immediately
+                if (window.app && window.app.loadMedicines) {
+                    window.app.loadMedicines(); // Refresh dashboard immediately
+                }
             } else {
-                app.showNotification(result.message || 'Failed to update medicine', 'error');
+                this.showNotification(result.message || 'Failed to update medicine', 'error');
             }
 
         } catch (error) {
             console.error('Error updating medicine:', error);
-            app.showNotification('Error updating medicine', 'error');
+            this.showNotification('Error updating medicine. Please try again.', 'error');
+        } finally {
+            const btn = document.querySelector('#editMedicineForm button[type="submit"]');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-save"></i> Update Medicine';
+                btn.disabled = false;
+            }
         }
     }
 
@@ -759,6 +2408,9 @@ class DashboardManager {
         
         this.resetRecordingUI();
         this.voiceAlertId = null;
+        
+        // Reset time inputs based on frequency
+        toggleTimeInputs();
     }
 
     resetEditMedicineForm() {
@@ -786,10 +2438,10 @@ class DashboardManager {
     async handleUpdateProfile() {
         try {
             const formData = new FormData();
-            const user = app.getCurrentUser();
+            const user = this.getCurrentUser();
             
             if (!user) {
-                app.showNotification('Please login first', 'error');
+                this.showNotification('Please login first', 'error');
                 return;
             }
 
@@ -805,7 +2457,12 @@ class DashboardManager {
                 formData.append('profilePhoto', profilePhotoInput.files[0]);
             }
 
-            const response = await fetch('/api/users/profile', {
+            const btn = document.getElementById('saveProfileBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            btn.disabled = true;
+
+            const response = await fetch('http://localhost:5000/api/users/profile', {
                 method: 'PUT',
                 headers: {
                     'user-id': user.id
@@ -816,22 +2473,30 @@ class DashboardManager {
             const result = await response.json();
 
             if (result.success) {
-                app.showNotification('Profile updated successfully!', 'success');
+                this.showNotification('Profile updated successfully!', 'success');
                 // Update current user data
-                app.setCurrentUser(result.user);
+                if (window.app) {
+                    window.app.setCurrentUser(result.user);
+                }
                 this.loadProfileData();
             } else {
-                app.showNotification(result.message || 'Failed to update profile', 'error');
+                this.showNotification(result.message || 'Failed to update profile', 'error');
             }
 
         } catch (error) {
             console.error('Error updating profile:', error);
-            app.showNotification('Error updating profile: ' + (error.message || 'Please try again'), 'error');
+            this.showNotification('Error updating profile: ' + (error.message || 'Please try again'), 'error');
+        } finally {
+            const btn = document.getElementById('saveProfileBtn');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-save"></i> Update Profile';
+                btn.disabled = false;
+            }
         }
     }
 
     loadProfileData() {
-        const user = app.getCurrentUser();
+        const user = this.getCurrentUser();
         if (user) {
             document.getElementById('profileName').value = user.name || '';
             document.getElementById('profileEmail').value = user.email || '';
@@ -845,7 +2510,7 @@ class DashboardManager {
             if (preview) {
                 if (user.profile_photo) {
                     preview.innerHTML = `
-                        <img src="/uploads/profile-photos/${user.profile_photo}" alt="Profile Photo" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">
+                        <img src="http://localhost:5000/uploads/profile-photos/${user.profile_photo}" alt="Profile Photo" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary);">
                     `;
                 } else {
                     preview.innerHTML = `
@@ -858,8 +2523,18 @@ class DashboardManager {
 
     async exportHistory() {
         try {
-            const user = app.getCurrentUser();
-            const response = await fetch('/api/export/history', {
+            const user = this.getCurrentUser();
+            if (!user) {
+                this.showNotification('Please login first', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('exportHistoryBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+            btn.disabled = true;
+
+            const response = await fetch('http://localhost:5000/api/export/history', {
                 headers: {
                     'user-id': user.id
                 }
@@ -871,25 +2546,84 @@ class DashboardManager {
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = url;
-                a.download = 'meditrack-history.csv';
+                a.download = `meditrack-history-${new Date().toISOString().split('T')[0]}.csv`;
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
                 
-                app.showNotification('History exported successfully!', 'success');
+                this.showNotification('History exported successfully!', 'success');
             } else {
                 const error = await response.json();
-                app.showNotification(error.message || 'Failed to export history', 'error');
+                this.showNotification(error.message || 'Failed to export history', 'error');
             }
         } catch (error) {
             console.error('Error exporting history:', error);
-            app.showNotification('Error exporting history', 'error');
+            this.showNotification('Error exporting history. Please try again.', 'error');
+        } finally {
+            const btn = document.getElementById('exportHistoryBtn');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-download"></i> Export Logs';
+                btn.disabled = false;
+            }
+        }
+    }
+
+    async applyHistoryFilters() {
+        try {
+            const range = document.getElementById('historyRange').value;
+            const status = document.getElementById('historyStatus').value;
+            
+            const user = this.getCurrentUser();
+            if (!user) return;
+
+            let url = `http://localhost:5000/api/history?range=${range}&status=${status}`;
+            
+            const response = await fetch(url, {
+                headers: {
+                    'user-id': user.id
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                if (window.app) {
+                    window.app.history = result.history;
+                    window.app.updateHistoryTable();
+                }
+                this.showNotification('Filters applied successfully!', 'success');
+            }
+        } catch (error) {
+            console.error('Error applying filters:', error);
+            this.showNotification('Error applying filters', 'error');
+        }
+    }
+
+    getCurrentUser() {
+        return window.app ? window.app.currentUser : null;
+    }
+
+    showNotification(message, type = 'info') {
+        if (window.app && window.app.showNotification) {
+            window.app.showNotification(message, type);
+        } else {
+            // Fallback notification
+            const toast = document.getElementById('notificationToast');
+            if (toast) {
+                toast.textContent = message;
+                toast.className = `toast show ${type}`;
+                setTimeout(() => {
+                    toast.className = 'toast';
+                }, 5000);
+            } else {
+                alert(`${type.toUpperCase()}: ${message}`);
+            }
         }
     }
 }
 
-// Main application initialization
+// Enhanced Main application initialization
 class MediTrackApp {
     constructor() {
         this.currentUser = null;
@@ -899,6 +2633,7 @@ class MediTrackApp {
         this.currentReminderMedicine = null;
         this.reminderLoopInterval = null;
         this.dashboardManager = null;
+        this.lowStockShownToday = false;
         
         this.init();
     }
@@ -908,6 +2643,20 @@ class MediTrackApp {
         this.setupEventListeners();
         this.startReminderChecker();
         this.dashboardManager = new DashboardManager();
+        
+        // Initialize frequency system
+        this.initializeFrequencySystem();
+    }
+
+    initializeFrequencySystem() {
+        // Add event listener to frequency dropdown
+        const frequencySelect = document.getElementById('medicineFrequency');
+        if (frequencySelect) {
+            frequencySelect.addEventListener('change', toggleTimeInputs);
+        }
+        
+        // Initialize on page load
+        toggleTimeInputs();
     }
 
     checkAuthentication() {
@@ -956,9 +2705,7 @@ class MediTrackApp {
             }
         });
 
-        // Auth forms
-        document.getElementById('loginForm').addEventListener('submit', (e) => this.handleLogin(e));
-        document.getElementById('registerForm').addEventListener('submit', (e) => this.handleRegister(e));
+        // Auth forms are handled by AuthManager
 
         // Logout
         document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
@@ -1012,62 +2759,6 @@ class MediTrackApp {
         }
     }
 
-    async handleLogin(e) {
-        e.preventDefault();
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
-
-        try {
-            const response = await this.apiCall('/api/auth/login', 'POST', { email, password });
-            
-            if (response.success) {
-                this.currentUser = response.user;
-                localStorage.setItem('meditrack_user', JSON.stringify(response.user));
-                this.showDashboard();
-                this.showNotification('Login successful!', 'success');
-            } else {
-                this.showNotification(response.message, 'error');
-            }
-        } catch (error) {
-            console.error('Login error:', error);
-            this.showNotification('Login failed. Please try again.', 'error');
-        }
-    }
-
-    async handleRegister(e) {
-        e.preventDefault();
-        const name = document.getElementById('registerName').value;
-        const email = document.getElementById('registerEmail').value;
-        const password = document.getElementById('registerPassword').value;
-        const age = document.getElementById('registerAge').value;
-        const medicalHistory = document.getElementById('registerMedicalHistory').value;
-        const guardianName = document.getElementById('registerGuardianName').value;
-        const guardianContact = document.getElementById('registerGuardianContact').value;
-
-        try {
-            const response = await this.apiCall('/api/auth/register', 'POST', {
-                name,
-                email,
-                password,
-                age,
-                medical_history: medicalHistory,
-                guardian_name: guardianName,
-                guardian_contact: guardianContact
-            });
-            
-            if (response.success) {
-                this.showNotification('Registration successful! Please login.', 'success');
-                this.switchAuthTab('login');
-                document.getElementById('registerForm').reset();
-            } else {
-                this.showNotification(result.message, 'error');
-            }
-        } catch (error) {
-            console.error('Registration error:', error);
-            this.showNotification('Registration failed. Please try again.', 'error');
-        }
-    }
-
     async loadDashboardData() {
         try {
             await Promise.all([
@@ -1086,6 +2777,7 @@ class MediTrackApp {
                 this.medicines = response.medicines;
                 this.updateMedicineTable();
                 this.updateSummaryCards();
+                this.checkLowStockMedicines();
             }
         } catch (error) {
             console.error('Error loading medicines:', error);
@@ -1110,6 +2802,22 @@ class MediTrackApp {
 
         tableBody.innerHTML = '';
 
+        if (this.medicines.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 40px; color: var(--gray-500);">
+                        <i class="fas fa-pills" style="font-size: 3rem; margin-bottom: 16px; display: block;"></i>
+                        <h3>No medicines added yet</h3>
+                        <p>Add your first medicine to get started with reminders</p>
+                        <button class="btn btn-primary" onclick="switchContentSection('add-medicine-section')" style="margin-top: 16px;">
+                            <i class="fas fa-plus"></i> Add Your First Medicine
+                        </button>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
         this.medicines.forEach(medicine => {
             const row = document.createElement('tr');
             const statusBadge = this.getStatusBadge(medicine.status);
@@ -1117,14 +2825,36 @@ class MediTrackApp {
                               medicine.voice_alert_type === 'upload' ? 'Uploaded' : 'Default';
 
             row.innerHTML = `
-                <td>${medicine.name}</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        ${medicine.medicine_photo ? 
+                            `<img src="http://localhost:5000/uploads/medicine-photos/${medicine.medicine_photo}" 
+                                  alt="${medicine.name}" 
+                                  style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;">` :
+                            `<div style="width: 40px; height: 40px; background: var(--gray-200); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-pills" style="color: var(--gray-500);"></i>
+                            </div>`
+                        }
+                        <div>
+                            <div style="font-weight: 600;">${medicine.name}</div>
+                            ${medicine.stock > 0 ? `<div style="font-size: 12px; color: var(--gray-500);">Stock: ${medicine.stock}</div>` : ''}
+                        </div>
+                    </div>
+                </td>
                 <td>${medicine.dosage}</td>
-                <td>${medicine.time}</td>
-                <td>${voiceAlert}</td>
+                <td>
+                    <div style="font-weight: 600;">${medicine.time}</div>
+                    <div style="font-size: 12px; color: var(--gray-500); text-transform: capitalize;">${medicine.frequency}</div>
+                </td>
+                <td>
+                    <span class="status-badge ${voiceAlert === 'Custom' ? 'status-taken' : voiceAlert === 'Uploaded' ? 'status-pending' : 'status-missed'}">
+                        ${voiceAlert}
+                    </span>
+                </td>
                 <td>${statusBadge}</td>
                 <td class="action-buttons">
-                    <button class="btn btn-success btn-sm" onclick="app.markMedicineAsTaken('${medicine.id}')">
-                        <i class="fas fa-check"></i> Taken
+                    <button class="btn btn-success btn-sm" onclick="app.markMedicineAsTaken('${medicine.id}')" ${medicine.status === 'taken' ? 'disabled' : ''}>
+                        <i class="fas fa-check"></i> ${medicine.status === 'taken' ? 'Taken' : 'Mark Taken'}
                     </button>
                     <button class="btn btn-warning btn-sm" onclick="app.editMedicine('${medicine.id}')">
                         <i class="fas fa-edit"></i> Edit
@@ -1148,6 +2878,44 @@ class MediTrackApp {
         document.getElementById('pendingCount').textContent = pendingCount;
         document.getElementById('missedCount').textContent = missedCount;
         document.getElementById('lowStockCount').textContent = lowStockCount;
+
+        // Show due medicines alert
+        this.updateDueMedicinesAlert();
+    }
+
+    updateDueMedicinesAlert() {
+        const dueMedicinesAlert = document.getElementById('dueMedicinesAlert');
+        const dueMedicinesList = document.getElementById('dueMedicinesList');
+        
+        const dueMedicines = this.medicines.filter(medicine => {
+            if (medicine.status !== 'pending') return false;
+            
+            const now = new Date();
+            const medicineTime = new Date();
+            const [hours, minutes] = medicine.time.split(':');
+            medicineTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+            
+            // Consider medicine due if it's within the next 30 minutes or overdue
+            const timeDiff = medicineTime.getTime() - now.getTime();
+            return timeDiff <= 30 * 60 * 1000 && timeDiff > -5 * 60 * 1000; // Due in next 30 mins or up to 5 mins overdue
+        });
+
+        if (dueMedicines.length > 0) {
+            dueMedicinesList.innerHTML = dueMedicines.map(medicine => `
+                <div style="display: flex; justify-content: between; align-items: center; padding: 12px; background: var(--gray-50); border-radius: 6px; margin-bottom: 8px;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600;">${medicine.name}</div>
+                        <div style="font-size: 14px; color: var(--gray-600);">${medicine.dosage} at ${medicine.time}</div>
+                    </div>
+                    <button class="btn btn-success btn-sm" onclick="app.markMedicineAsTaken('${medicine.id}')">
+                        <i class="fas fa-check"></i> Taken
+                    </button>
+                </div>
+            `).join('');
+            dueMedicinesAlert.style.display = 'block';
+        } else {
+            dueMedicinesAlert.style.display = 'none';
+        }
     }
 
     updateHistoryTable() {
@@ -1156,15 +2924,36 @@ class MediTrackApp {
 
         tableBody.innerHTML = '';
 
+        if (this.history.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px; color: var(--gray-500);">
+                        <i class="fas fa-history" style="font-size: 3rem; margin-bottom: 16px; display: block;"></i>
+                        <h3>No history yet</h3>
+                        <p>Your medication history will appear here</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
         this.history.forEach(record => {
             const row = document.createElement('tr');
-            const date = new Date(record.created_at).toLocaleDateString();
+            
+            // FIXED: Proper date formatting for history
+            const date = new Date(record.created_at);
+            const formattedDate = date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+            
             const scheduledTime = record.scheduled_time;
-            const actualTime = record.actual_time || '-';
+            const actualTime = record.actual_time && record.actual_time !== 'null' ? record.actual_time : '-';
             const statusBadge = this.getStatusBadge(record.status);
 
             row.innerHTML = `
-                <td>${date}</td>
+                <td>${formattedDate}</td>
                 <td>${record.medicine_name}</td>
                 <td>${record.dosage}</td>
                 <td>${scheduledTime}</td>
@@ -1186,11 +2975,14 @@ class MediTrackApp {
         return badges[status] || badges.pending;
     }
 
-    // Reminder System with Looping
+    // Enhanced Reminder System
     startReminderChecker() {
         this.reminderInterval = setInterval(() => {
             this.checkDueMedicines();
-        }, 5000);
+        }, 30000); // Check every 30 seconds
+
+        // Also check immediately
+        this.checkDueMedicines();
     }
 
     async checkDueMedicines() {
@@ -1203,11 +2995,77 @@ class MediTrackApp {
                 if (!this.isReminderActive() || this.currentReminderMedicine?.id !== activeReminder.id) {
                     this.showReminderModal(activeReminder);
                     this.startVoiceLoop(activeReminder);
+                    
+                    // Check for low stock and show alert
+                    if (activeReminder.stock <= activeReminder.refill_reminder && activeReminder.refill_reminder > 0) {
+                        this.showLowStockAlert(activeReminder);
+                    }
                 }
             }
+            
+            // Also check for any low stock medicines
+            await this.checkLowStockMedicines();
+            
         } catch (error) {
             console.error('Error checking reminders:', error);
         }
+    }
+
+    async checkLowStockMedicines() {
+        try {
+            const lowStockMedicines = this.medicines.filter(med => 
+                med.stock <= med.refill_reminder && med.refill_reminder > 0 && med.stock > 0
+            );
+            
+            if (lowStockMedicines.length > 0 && !this.lowStockShownToday) {
+                this.showLowStockNotification(lowStockMedicines);
+                this.lowStockShownToday = true;
+                
+                // Reset daily flag at midnight
+                this.resetDailyAlerts();
+            }
+        } catch (error) {
+            console.error('Error checking low stock:', error);
+        }
+    }
+
+    resetDailyAlerts() {
+        const now = new Date();
+        const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        const timeUntilMidnight = tomorrow.getTime() - now.getTime();
+        
+        setTimeout(() => {
+            this.lowStockShownToday = false;
+            this.resetDailyAlerts(); // Schedule next reset
+        }, timeUntilMidnight);
+    }
+
+    showLowStockAlert(medicine) {
+        const alertHTML = `
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin: 10px 0;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <i class="fas fa-exclamation-triangle" style="color: #f39c12;"></i>
+                    <strong style="color: #856404;">Low Stock Alert</strong>
+                </div>
+                <p style="margin: 0; color: #856404;">
+                    <strong>${medicine.name}</strong> is running low! Only <strong>${medicine.stock}</strong> doses remaining.
+                </p>
+            </div>
+        `;
+        
+        // Add to reminder modal
+        const reminderContent = document.getElementById('reminderContent');
+        if (reminderContent) {
+            reminderContent.insertAdjacentHTML('beforeend', alertHTML);
+        }
+    }
+
+    showLowStockNotification(medicines) {
+        const medicineNames = medicines.map(med => med.name).join(', ');
+        this.showNotification(
+            `Low stock alert: ${medicineNames} are running low!`, 
+            'warning'
+        );
     }
 
     isReminderActive() {
@@ -1230,13 +3088,16 @@ class MediTrackApp {
                 </p>
                 <p style="color: var(--gray-600);">Scheduled for: ${medicine.time}</p>
                 <p style="color: var(--gray-500); font-size: 0.9rem; margin-top: 10px;">
-                    <i class="fas fa-info-circle"></i> Voice reminder will repeat every 30 seconds
+                    <i class="fas fa-info-circle"></i> Voice reminder will repeat every 30 seconds until dismissed
                 </p>
             </div>
         `;
 
         modal.classList.add('active');
         this.currentReminderMedicine = medicine;
+        
+        // Prevent body scroll when modal is open
+        document.body.style.overflow = 'hidden';
     }
 
     startVoiceLoop(medicine) {
@@ -1253,11 +3114,15 @@ class MediTrackApp {
                 clearInterval(this.reminderLoopInterval);
                 this.reminderLoopInterval = null;
             }
-        }, 30000);
+        }, 30000); // Repeat every 30 seconds
     }
 
     hideReminderModal() {
-        document.getElementById('reminderModal').classList.remove('active');
+        const modal = document.getElementById('reminderModal');
+        modal.classList.remove('active');
+        
+        // Restore body scroll
+        document.body.style.overflow = '';
         
         if (this.reminderLoopInterval) {
             clearInterval(this.reminderLoopInterval);
@@ -1274,6 +3139,7 @@ class MediTrackApp {
 
     playVoiceAlert(medicine) {
         if ('speechSynthesis' in window) {
+            // Cancel any ongoing speech
             speechSynthesis.cancel();
             
             const utterance = new SpeechSynthesisUtterance(
@@ -1291,11 +3157,17 @@ class MediTrackApp {
     async handleMedicineAction(action) {
         if (!this.currentReminderMedicine) return;
 
-        if (action === 'taken') {
-            await this.markMedicineAsTaken(this.currentReminderMedicine.id);
-        }
+        try {
+            if (action === 'taken') {
+                await this.markMedicineAsTaken(this.currentReminderMedicine.id);
+            }
 
-        this.hideReminderModal();
+            this.hideReminderModal();
+            this.showNotification('Medicine updated successfully!', 'success');
+        } catch (error) {
+            console.error('Error handling medicine action:', error);
+            this.showNotification('Error updating medicine', 'error');
+        }
     }
 
     showCustomRemindOptions() {
@@ -1307,8 +3179,8 @@ class MediTrackApp {
         const minutesInput = document.getElementById('customMinutes');
         const minutes = parseInt(minutesInput.value);
         
-        if (!minutes || minutes < 1) {
-            this.showNotification('Please enter a valid number of minutes', 'error');
+        if (!minutes || minutes < 1 || minutes > 1440) {
+            this.showNotification('Please enter a valid number of minutes (1-1440)', 'error');
             return;
         }
 
@@ -1337,7 +3209,7 @@ class MediTrackApp {
 
     // API Methods
     async apiCall(endpoint, method = 'GET', data = null) {
-        const url = `http://localhost:5001${endpoint}`;
+        const url = `http://localhost:5000${endpoint}`;
         const options = {
             method,
             headers: {
@@ -1351,18 +3223,39 @@ class MediTrackApp {
         }
 
         const response = await fetch(url, options);
-        const result = await response.json();
-
+        
         if (!response.ok) {
-            throw new Error(result.message || 'API call failed');
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
 
+        const result = await response.json();
         return result;
     }
 
-    // Utility Methods
+    // Enhanced Notification System
     showNotification(message, type = 'info') {
-        alert(`${type.toUpperCase()}: ${message}`);
+        const toast = document.getElementById('notificationToast');
+        if (!toast) {
+            // Create toast if it doesn't exist
+            const toastElement = document.createElement('div');
+            toastElement.id = 'notificationToast';
+            toastElement.className = `toast show ${type}`;
+            toastElement.textContent = message;
+            document.body.appendChild(toastElement);
+            
+            setTimeout(() => {
+                toastElement.remove();
+            }, 5000);
+            return;
+        }
+
+        toast.textContent = message;
+        toast.className = `toast show ${type}`;
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            toast.className = 'toast';
+        }, 5000);
     }
 
     getCurrentUser() {
@@ -1380,15 +3273,19 @@ class MediTrackApp {
         this.medicines = [];
         this.history = [];
 
+        // Clear all intervals
         if (this.reminderInterval) {
             clearInterval(this.reminderInterval);
+            this.reminderInterval = null;
         }
         
         if (this.reminderLoopInterval) {
             clearInterval(this.reminderLoopInterval);
+            this.reminderLoopInterval = null;
         }
 
         this.showLandingPage();
+        this.showNotification('Logged out successfully!', 'success');
     }
 }
 
@@ -1408,7 +3305,10 @@ function switchContentSection(sectionId) {
     });
 
     // Show target section
-    document.getElementById(sectionId).classList.add('active');
+    const targetSection = document.getElementById(sectionId);
+    if (targetSection) {
+        targetSection.classList.add('active');
+    }
 
     // Activate corresponding menu item
     const menuItem = document.querySelector(`.menu-item[data-target="${sectionId}"]`);
@@ -1426,25 +3326,78 @@ function switchContentSection(sectionId) {
     }
 }
 
+// Frequency time inputs handler - FIXED
+function toggleTimeInputs() {
+    const frequency = document.getElementById('medicineFrequency')?.value;
+    const time2Group = document.getElementById('time2Group');
+    const time3Group = document.getElementById('time3Group');
+    
+    if (!frequency || !time2Group || !time3Group) return;
+    
+    // Hide all optional time inputs first
+    time2Group.style.display = 'none';
+    time3Group.style.display = 'none';
+    
+    // Show based on frequency
+    if (frequency === 'twice' || frequency === 'thrice') {
+        time2Group.style.display = 'block';
+    }
+    if (frequency === 'thrice') {
+        time3Group.style.display = 'block';
+    }
+}
+
+// Setup menu navigation
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const target = this.getAttribute('data-target');
+            switchContentSection(target);
+        });
+    });
+});
+
 // Make methods globally available
 window.app = app;
+window.switchContentSection = switchContentSection;
+window.toggleTimeInputs = toggleTimeInputs;
 
 // Medicine actions
 app.markMedicineAsTaken = async function(medicineId) {
     try {
+        // Disable button immediately to prevent multiple clicks
+        const buttons = document.querySelectorAll(`button[onclick*="${medicineId}"]`);
+        buttons.forEach(btn => {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        });
+
         const notes = prompt('Add any notes (optional):') || '';
         
-        await app.apiCall(`/api/medicines/${medicineId}/taken`, 'POST', {
+        const response = await app.apiCall(`/api/medicines/${medicineId}/taken`, 'POST', {
             notes
         });
 
-        app.showNotification('Medicine marked as taken!', 'success');
-        await app.loadMedicines();
-        await app.loadHistory();
+        if (response.success) {
+            app.showNotification('Medicine marked as taken! Stock updated.', 'success');
+            await app.loadMedicines();
+            await app.loadHistory();
+        } else {
+            app.showNotification(response.message, 'error');
+        }
 
     } catch (error) {
         console.error('Error marking medicine as taken:', error);
         app.showNotification('Failed to update medicine', 'error');
+    } finally {
+        // Re-enable buttons after processing
+        setTimeout(() => {
+            const buttons = document.querySelectorAll(`button[onclick*="${medicineId}"]`);
+            buttons.forEach(btn => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check"></i> Taken';
+            });
+        }, 2000);
     }
 };
 
@@ -1453,7 +3406,7 @@ app.editMedicine = async function(medicineId) {
 };
 
 app.deleteMedicine = async function(medicineId) {
-    if (!confirm('Are you sure you want to delete this medicine?')) {
+    if (!confirm('Are you sure you want to delete this medicine? This action cannot be undone.')) {
         return;
     }
 
@@ -1468,13 +3421,3 @@ app.deleteMedicine = async function(medicineId) {
         app.showNotification('Failed to delete medicine', 'error');
     }
 };
-
-// Setup menu navigation
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.menu-item').forEach(item => {
-        item.addEventListener('click', function() {
-            const target = this.getAttribute('data-target');
-            switchContentSection(target);
-        });
-    });
-});
