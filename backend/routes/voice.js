@@ -2,17 +2,16 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const VoiceController = require('../controllers/voiceController');
-const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/voice-alerts/');
+    cb(null, path.join(__dirname, '../uploads/voice-alerts/'));
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, 'voice-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
@@ -31,8 +30,7 @@ const upload = multer({
   }
 });
 
-router.use(authMiddleware);
-
+// ✅ No authMiddleware — we use user-id header now
 router.post('/upload', upload.single('voiceFile'), VoiceController.uploadVoiceAlert);
 router.get('/', VoiceController.getVoiceAlerts);
 router.get('/file/:filename', VoiceController.serveVoiceFile);

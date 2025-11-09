@@ -12,25 +12,9 @@ class DashboardManager {
         this.editAudioBlob = null;
         this.isEditRecording = false;
         this.editVoiceAlertId = null;
-        this.toggleCustomDaysInput=null;
-        this.setupDashboardEventListeners=null;
-        this.showLowStockBanner=null;
-
+        
+        this.setupDashboardEventListeners();
     }
- toggleCustomDaysInput() {
-  const typeSelect = document.getElementById('medicineDurationType');
-  const customDaysGroup = document.getElementById('customDaysGroup');
-  if (!typeSelect || !customDaysGroup) return;
-
-  if (typeSelect.value === 'custom') {
-    customDaysGroup.style.display = 'block';
-  } else {
-    customDaysGroup.style.display = 'none';
-    const daysInput = document.getElementById('customDays');
-    if (daysInput) daysInput.value = '';
-  }
-}
-
 
     setupDashboardEventListeners() {
         // Add medicine form
@@ -82,8 +66,33 @@ class DashboardManager {
         // Voice recording setup
         this.setupVoiceRecording();
         this.setupEditVoiceRecording();
+        
+        // Duration type toggle
+        this.setupDurationToggle();
     }
 
+    setupDurationToggle() {
+        const durationTypeSelect = document.getElementById('medicineDurationType');
+        if (durationTypeSelect) {
+            durationTypeSelect.addEventListener('change', () => {
+                this.toggleCustomDaysInput();
+            });
+        }
+    }
+
+    toggleCustomDaysInput() {
+        const typeSelect = document.getElementById('medicineDurationType');
+        const customDaysGroup = document.getElementById('customDaysGroup');
+        if (!typeSelect || !customDaysGroup) return;
+
+        if (typeSelect.value === 'custom') {
+            customDaysGroup.style.display = 'block';
+        } else {
+            customDaysGroup.style.display = 'none';
+            const daysInput = document.getElementById('customDays');
+            if (daysInput) daysInput.value = '';
+        }
+    }
 
     setupFileUploadListeners() {
         const medicinePhotoInput = document.getElementById('medicinePhotoInput');
@@ -129,6 +138,17 @@ class DashboardManager {
                 this.handleVoiceTypeChange('add');
             });
         }
+
+        // Recording buttons
+        const startBtn = document.getElementById('startRecordingBtn');
+        const stopBtn = document.getElementById('stopRecordingBtn');
+        const playBtn = document.getElementById('playRecordingBtn');
+        const saveBtn = document.getElementById('saveRecordingBtn');
+
+        if (startBtn) startBtn.addEventListener('click', () => this.startRecording());
+        if (stopBtn) stopBtn.addEventListener('click', () => this.stopRecording());
+        if (playBtn) playBtn.addEventListener('click', () => this.playRecording());
+        if (saveBtn) saveBtn.addEventListener('click', () => this.saveRecording());
     }
 
     setupEditVoiceRecording() {
@@ -138,6 +158,17 @@ class DashboardManager {
                 this.handleVoiceTypeChange('edit');
             });
         }
+
+        // Edit recording buttons
+        const startBtn = document.getElementById('editStartRecordingBtn');
+        const stopBtn = document.getElementById('editStopRecordingBtn');
+        const playBtn = document.getElementById('editPlayRecordingBtn');
+        const saveBtn = document.getElementById('editSaveRecordingBtn');
+
+        if (startBtn) startBtn.addEventListener('click', () => this.startEditRecording());
+        if (stopBtn) stopBtn.addEventListener('click', () => this.stopEditRecording());
+        if (playBtn) playBtn.addEventListener('click', () => this.playEditRecording());
+        if (saveBtn) saveBtn.addEventListener('click', () => this.saveEditRecording());
     }
 
     handleVoiceTypeChange(type) {
@@ -265,20 +296,15 @@ class DashboardManager {
             formData.append('voiceFile', this.audioBlob, `${alertName}.wav`);
             formData.append('alertName', alertName);
 
-         const response = await this.apiCall('/api/voice/upload', 'POST', formData, true);
-
-
+            const response = await this.apiCall('/api/voice/upload', 'POST', formData, true);
             const result = await response.json();
 
             if (result.success) {
                 this.showNotification('Voice alert saved successfully!', 'success');
                 this.voiceAlertId = result.voiceAlert.id;
                 console.log("🎤 Recorded voice saved with ID:", this.voiceAlertId);
-
                 this.resetRecordingUI();
-                
                 document.getElementById('voiceAlertType').value = 'record';
-                
             } else {
                 this.showNotification(result.message || 'Failed to save voice alert', 'error');
             }
@@ -416,18 +442,14 @@ class DashboardManager {
             formData.append('voiceFile', this.editAudioBlob, `${alertName}.wav`);
             formData.append('alertName', alertName);
 
-           const response = await this.apiCall('/api/voice/upload', 'POST', formData, true);
-
-
+            const response = await this.apiCall('/api/voice/upload', 'POST', formData, true);
             const result = await response.json();
 
             if (result.success) {
                 this.showNotification('Voice alert saved successfully!', 'success');
                 this.editVoiceAlertId = result.voiceAlert.id;
                 this.resetEditRecordingUI();
-                
                 document.getElementById('editVoiceAlertType').value = 'record';
-                
             } else {
                 this.showNotification(result.message || 'Failed to save voice alert', 'error');
             }
@@ -548,22 +570,23 @@ class DashboardManager {
                 this.showNotification('Please enter at least one time', 'error');
                 return;
             }
-// ✅ Duration handling
-const durationType = document.getElementById('medicineDurationType')?.value;
-let endDate = null;
-if (durationType === 'week') {
-  const d = new Date();
-  d.setDate(d.getDate() + 7);
-  endDate = d.toISOString().split("T")[0];
-} else if (durationType === 'custom') {
-  const customDays = parseInt(document.getElementById('customDays')?.value || 0);
-  if (customDays > 0) {
-    const d = new Date();
-    d.setDate(d.getDate() + customDays);
-    endDate = d.toISOString().split("T")[0];
-  }
-}
-formData.append('end_date', endDate || '');
+
+            // Duration handling
+            const durationType = document.getElementById('medicineDurationType')?.value;
+            let endDate = null;
+            if (durationType === 'week') {
+                const d = new Date();
+                d.setDate(d.getDate() + 7);
+                endDate = d.toISOString().split("T")[0];
+            } else if (durationType === 'custom') {
+                const customDays = parseInt(document.getElementById('customDays')?.value || 0);
+                if (customDays > 0) {
+                    const d = new Date();
+                    d.setDate(d.getDate() + customDays);
+                    endDate = d.toISOString().split("T")[0];
+                }
+            }
+            formData.append('end_date', endDate || '');
 
             // Add basic medicine data with multiple times
             formData.append('name', document.getElementById('medicineName').value);
@@ -578,8 +601,8 @@ formData.append('end_date', endDate || '');
             const voiceAlertType = document.getElementById('voiceAlertType').value;
             formData.append('voice_alert_type', voiceAlertType);
             if (voiceAlertType === 'record' && this.voiceAlertId) {
-    formData.append('voice_alert_id', this.voiceAlertId);
-}
+                formData.append('voice_alert_id', this.voiceAlertId);
+            }
 
             // Add medicine photo if exists
             const medicinePhotoInput = document.getElementById('medicinePhotoInput');
@@ -599,9 +622,7 @@ formData.append('end_date', endDate || '');
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
             btn.disabled = true;
 
-         const response = await this.apiCall('/api/medicines', 'POST', formData, true);
-
-
+            const response = await this.apiCall('/api/medicines', 'POST', formData, true);
             const result = await response.json();
 
             if (result.success) {
@@ -634,9 +655,8 @@ formData.append('end_date', endDate || '');
                 this.showNotification('Please login first', 'error');
                 return;
             }
-const response = await this.apiCall(`/api/medicines/${this.editingMedicineId}`, 'PUT', formData, true);
 
-          
+            const response = await this.apiCall(`/api/medicines/${medicineId}`, 'GET');
             const result = await response.json();
 
             if (result.success) {
@@ -701,9 +721,8 @@ const response = await this.apiCall(`/api/medicines/${this.editingMedicineId}`, 
             const voiceAlertType = document.getElementById('editVoiceAlertType').value;
             formData.append('voice_alert_type', voiceAlertType);
             if (voiceAlertType === 'record' && this.editVoiceAlertId) {
-    formData.append('voice_alert_id', this.editVoiceAlertId);
-}
-
+                formData.append('voice_alert_id', this.editVoiceAlertId);
+            }
             
             // Add medicine photo if exists
             const medicinePhotoInput = document.getElementById('editMedicinePhotoInput');
@@ -723,14 +742,7 @@ const response = await this.apiCall(`/api/medicines/${this.editingMedicineId}`, 
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
             btn.disabled = true;
 
-            const response = await fetch(`http://localhost:5000/api/medicines/${this.editingMedicineId}`, {
-                method: 'PUT',
-                headers: {
-                    'user-id': user.id
-                },
-                body: formData
-            });
-
+            const response = await this.apiCall(`/api/medicines/${this.editingMedicineId}`, 'PUT', formData, true);
             const result = await response.json();
 
             if (result.success) {
@@ -778,6 +790,8 @@ const response = await this.apiCall(`/api/medicines/${this.editingMedicineId}`, 
         
         // Reset time inputs based on frequency
         toggleTimeInputs();
+        // Reset duration inputs
+        this.toggleCustomDaysInput();
     }
 
     resetEditMedicineForm() {
@@ -829,8 +843,7 @@ const response = await this.apiCall(`/api/medicines/${this.editingMedicineId}`, 
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
             btn.disabled = true;
 
-           const response = await this.apiCall('/api/users/profile', 'PUT', formData, true);
-
+            const response = await this.apiCall('/api/users/profile', 'PUT', formData, true);
             const result = await response.json();
 
             if (result.success) {
@@ -982,6 +995,37 @@ const response = await this.apiCall(`/api/medicines/${this.editingMedicineId}`, 
             }
         }
     }
+
+    // API helper method
+    async apiCall(endpoint, method = 'GET', data = null, isFormData = false) {
+    const url = `http://localhost:5000${endpoint}`;
+    const user = JSON.parse(localStorage.getItem('meditrack_user'));
+    const headers = { 'User-ID': user?.id || '' };
+
+    // Only add JSON header when not sending FormData
+    if (!isFormData && method !== 'GET') {
+        headers['Content-Type'] = 'application/json';
+    }
+
+    const options = { 
+        method, 
+        headers,
+        mode: 'cors'
+    };
+
+    if (data && (method === 'POST' || method === 'PUT')) {
+        options.body = isFormData ? data : JSON.stringify(data);
+    }
+
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new Error(`HTTP ${response.status} ${response.statusText} ${text}`);
+    }
+
+    return await response.json();
+}
+
 }
 
 // Enhanced Main application initialization
@@ -1037,13 +1081,19 @@ class MediTrackApp {
 
     setupEventListeners() {
         // Navigation
-        document.getElementById('landingLoginBtn').addEventListener('click', () => this.showAuthPage('login'));
-        document.getElementById('landingRegisterBtn').addEventListener('click', () => this.showAuthPage('register'));
-        document.getElementById('heroGetStartedBtn').addEventListener('click', () => this.showAuthPage('register'));
+        const landingLoginBtn = document.getElementById('landingLoginBtn');
+        const landingRegisterBtn = document.getElementById('landingRegisterBtn');
+        const heroGetStartedBtn = document.getElementById('heroGetStartedBtn');
+        
+        if (landingLoginBtn) landingLoginBtn.addEventListener('click', () => this.showAuthPage('login'));
+        if (landingRegisterBtn) landingRegisterBtn.addEventListener('click', () => this.showAuthPage('register'));
+        if (heroGetStartedBtn) heroGetStartedBtn.addEventListener('click', () => this.showAuthPage('register'));
         
         // Auth tabs
-        document.getElementById('loginTab').addEventListener('click', () => this.switchAuthTab('login'));
-        document.getElementById('registerTab').addEventListener('click', () => this.switchAuthTab('register'));
+        const loginTab = document.getElementById('loginTab');
+        const registerTab = document.getElementById('registerTab');
+        if (loginTab) loginTab.addEventListener('click', () => this.switchAuthTab('login'));
+        if (registerTab) registerTab.addEventListener('click', () => this.switchAuthTab('register'));
 
         // Menu navigation
         document.querySelectorAll('.menu-item').forEach(item => {
@@ -1054,22 +1104,29 @@ class MediTrackApp {
         });
 
         // Modal buttons
-        document.getElementById('markTakenBtn').addEventListener('click', () => this.handleMedicineAction('taken'));
-        document.getElementById('showCustomRemindBtn').addEventListener('click', () => this.showCustomRemindOptions());
-        document.getElementById('setCustomReminderBtn').addEventListener('click', () => this.setCustomReminder());
-        document.getElementById('snoozeBtn').addEventListener('click', () => this.snoozeReminder());
+        const markTakenBtn = document.getElementById('markTakenBtn');
+        const showCustomRemindBtn = document.getElementById('showCustomRemindBtn');
+        const setCustomReminderBtn = document.getElementById('setCustomReminderBtn');
+        const snoozeBtn = document.getElementById('snoozeBtn');
+
+        if (markTakenBtn) markTakenBtn.addEventListener('click', () => this.handleMedicineAction('taken'));
+        if (showCustomRemindBtn) showCustomRemindBtn.addEventListener('click', () => this.showCustomRemindOptions());
+        if (setCustomReminderBtn) setCustomReminderBtn.addEventListener('click', () => this.setCustomReminder());
+        if (snoozeBtn) snoozeBtn.addEventListener('click', () => this.snoozeReminder());
 
         // Close modal when clicking outside
-        document.getElementById('reminderModal').addEventListener('click', (e) => {
-            if (e.target.id === 'reminderModal') {
-                this.hideReminderModal();
-            }
-        });
-
-        // Auth forms are handled by AuthManager
+        const reminderModal = document.getElementById('reminderModal');
+        if (reminderModal) {
+            reminderModal.addEventListener('click', (e) => {
+                if (e.target.id === 'reminderModal') {
+                    this.hideReminderModal();
+                }
+            });
+        }
 
         // Logout
-        document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) logoutBtn.addEventListener('click', () => this.logout());
     }
 
     showLandingPage() {
@@ -1139,6 +1196,7 @@ class MediTrackApp {
                 this.updateMedicineTable();
                 this.updateSummaryCards();
                 this.checkLowStockMedicines();
+                this.showLowStockBanner();
             }
         } catch (error) {
             console.error('Error loading medicines:', error);
@@ -1166,7 +1224,7 @@ class MediTrackApp {
         if (this.medicines.length === 0) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="6" style="text-align: center; padding: 40px; color: var(--gray-500);">
+                    <td colspan="7" style="text-align: center; padding: 40px; color: var(--gray-500);">
                         <i class="fas fa-pills" style="font-size: 3rem; margin-bottom: 16px; display: block;"></i>
                         <h3>No medicines added yet</h3>
                         <p>Add your first medicine to get started with reminders</p>
@@ -1179,27 +1237,25 @@ class MediTrackApp {
             return;
         }
 
-      this.medicines.slice().reverse().forEach((medicine, index) => {
-  const uniqueId = `${medicine.id}_${index}`; // ensures unique per row
-
+        this.medicines.slice().reverse().forEach((medicine, index) => {
             const row = document.createElement('tr');
             const statusBadge = this.getStatusBadge(medicine.status);
             const voiceAlert = medicine.voice_alert_type === 'record' ? 'Custom' : 
                               medicine.voice_alert_type === 'upload' ? 'Uploaded' : 'Default';
-// ✅ Calculate days left until expiry
-const daysLeft = medicine.end_date
-  ? Math.ceil((new Date(medicine.end_date) - new Date()) / (1000 * 60 * 60 * 24))
-  : null;
+            
+            // Calculate days left until expiry
+            const daysLeft = medicine.end_date
+                ? Math.ceil((new Date(medicine.end_date) - new Date()) / (1000 * 60 * 60 * 24))
+                : null;
 
-let expiryText = 'Lifetime';
-if (daysLeft !== null) {
-  if (daysLeft <= 0) expiryText = '<span style="color: red;">Expired</span>';
-  else if (daysLeft <= 3) expiryText = `<span style="color: orange;">${daysLeft} day(s) left</span>`;
-  else expiryText = `<span style="color: green;">${daysLeft} day(s) left</span>`;
-}
+            let expiryText = 'Lifetime';
+            if (daysLeft !== null) {
+                if (daysLeft <= 0) expiryText = '<span style="color: red;">Expired</span>';
+                else if (daysLeft <= 3) expiryText = `<span style="color: orange;">${daysLeft} day(s) left</span>`;
+                else expiryText = `<span style="color: green;">${daysLeft} day(s) left</span>`;
+            }
 
             row.innerHTML = `
-
                 <td>
                     <div style="display: flex; align-items: center; gap: 12px;">
                         ${medicine.medicine_photo ? 
@@ -1220,10 +1276,8 @@ if (daysLeft !== null) {
                 <td>
                     <div style="font-weight: 600;">${medicine.time}</div>
                     <div style="font-size: 12px; color: var(--gray-500); text-transform: capitalize;">${medicine.frequency}</div>
-
                 </td>
                 <td>${expiryText}</td>
-
                 <td>
                     <span class="status-badge ${voiceAlert === 'Custom' ? 'status-taken' : voiceAlert === 'Uploaded' ? 'status-pending' : 'status-missed'}">
                         ${voiceAlert}
@@ -1259,9 +1313,6 @@ if (daysLeft !== null) {
 
         // Show due medicines alert
         this.updateDueMedicinesAlert();
-        // Show low stock banner at top of dashboard
-this.showLowStockBanner();
-
     }
 
     updateDueMedicinesAlert() {
@@ -1321,7 +1372,7 @@ this.showLowStockBanner();
         this.history.forEach(record => {
             const row = document.createElement('tr');
             
-            // FIXED: Proper date formatting for history
+            // Proper date formatting for history
             const date = new Date(record.created_at);
             const formattedDate = date.toLocaleDateString('en-US', {
                 year: 'numeric',
@@ -1375,7 +1426,6 @@ this.showLowStockBanner();
                 const activeReminder = response.reminders[0];
                 if (!this.isReminderActive() || this.currentReminderMedicine?.id !== activeReminder.id) {
                     this.showReminderModal(activeReminder);
-                    // this.startVoiceLoop(activeReminder);
                     
                     // Check for low stock and show alert
                     if (activeReminder.stock <= activeReminder.refill_reminder && activeReminder.refill_reminder > 0) {
@@ -1392,74 +1442,114 @@ this.showLowStockBanner();
         }
     }
 
-// ✅ Enhanced continuous reminder popup (custom voice + photo)
-showReminderModal(medicine) {
-    const modal = document.getElementById('reminderModal');
-    const content = document.getElementById('reminderContent');
-    const customRemindSection = document.getElementById('customRemindLater');
-    customRemindSection.style.display = 'none';
+    // Enhanced continuous reminder popup (custom voice + photo)
+    showReminderModal(medicine) {
+        const modal = document.getElementById('reminderModal');
+        const content = document.getElementById('reminderContent');
+        const customRemindSection = document.getElementById('customRemindLater');
+        customRemindSection.style.display = 'none';
 
-    const imgSrc = medicine.medicine_photo
-        ? `http://localhost:5000/uploads/medicine-photos/${medicine.medicine_photo}`
-        : "images/default-pill.png";
+        const imgSrc = medicine.medicine_photo
+            ? `http://localhost:5000/uploads/medicine-photos/${medicine.medicine_photo}`
+            : "images/default-pill.png";
 
-    content.innerHTML = `
-        <div style="text-align: center; padding: 20px 0;">
-            <img src="${imgSrc}" alt="${medicine.name}" 
-                style="width:100px;height:100px;border-radius:12px;margin-bottom:10px;">
-            <h3 style="margin-bottom: 8px; color: var(--gray-900);">Time to take your medicine!</h3>
-            <p style="font-size: 1.2rem; color: var(--gray-700); margin-bottom: 8px;">
-                <strong>${medicine.name}</strong> - ${medicine.dosage}
-            </p>
-            <p style="color: var(--gray-600);">Scheduled for: ${medicine.time}</p>
-            <p style="color: var(--gray-500); font-size: 0.9rem; margin-top: 10px;">
-                <i class="fas fa-info-circle"></i> Voice reminder will keep playing until you respond
-            </p>
-            
-        </div>
-    `;
+        content.innerHTML = `
+            <div style="text-align: center; padding: 20px 0;">
+                <img src="${imgSrc}" alt="${medicine.name}" 
+                    style="width:100px;height:100px;border-radius:12px;margin-bottom:10px;">
+                <h3 style="margin-bottom: 8px; color: var(--gray-900);">Time to take your medicine!</h3>
+                <p style="font-size: 1.2rem; color: var(--gray-700); margin-bottom: 8px;">
+                    <strong>${medicine.name}</strong> - ${medicine.dosage}
+                </p>
+                <p style="color: var(--gray-600);">Scheduled for: ${medicine.time}</p>
+                <p style="color: var(--gray-500); font-size: 0.9rem; margin-top: 10px;">
+                    <i class="fas fa-info-circle"></i> Voice reminder will keep playing until you respond
+                </p>
+            </div>
+        `;
 
-    modal.classList.add('active');
-    this.currentReminderMedicine = medicine;
-    document.body.style.overflow = 'hidden';
+        modal.classList.add('active');
+        this.currentReminderMedicine = medicine;
+        document.body.style.overflow = 'hidden';
 
-    // ✅ Play continuous custom voice
-    playContinuousVoice(medicine);
+        // Play continuous voice
+        this.startVoiceLoop(medicine);
 
-    // ✅ Button events
-    document.getElementById('takenBtn').onclick = async () => {
-        await this.markMedicineAsTaken(medicine.id);
-        this.hideReminderModal();
-    };
+        // Button events
+        document.getElementById('markTakenBtn').onclick = async () => {
+            await this.markMedicineAsTaken(medicine.id);
+            this.hideReminderModal();
+        };
 
-    document.getElementById('remindLaterBtn').onclick = () => {
-        const delay = parseInt(prompt("Remind after how many minutes?", 5));
-        if (!isNaN(delay) && delay > 0) {
-            this.rescheduleReminder(delay);
-        }
-        this.hideReminderModal();
-    };
+        document.getElementById('showCustomRemindBtn').onclick = () => {
+            this.showCustomRemindOptions();
+        };
 
-    document.getElementById('snoozeBtn').onclick = () => {
-        this.rescheduleReminder(5);
-        this.hideReminderModal();
-    };
-}
-
-// ✅ Close modal + stop voice
-hideReminderModal() {
-    const modal = document.getElementById('reminderModal');
-    modal.classList.remove('active');
-    document.body.style.overflow = '';
-    stopContinuousVoice();
-
-    if (this.currentReminderMedicine) {
-        this.apiCall(`/api/reminders/${this.currentReminderMedicine.id}`, 'DELETE')
-            .catch(err => console.error('Error clearing reminder:', err));
+        document.getElementById('snoozeBtn').onclick = () => {
+            this.snoozeReminder();
+        };
     }
 
-    this.currentReminderMedicine = null;
-}
+    // Close modal + stop voice
+    hideReminderModal() {
+        const modal = document.getElementById('reminderModal');
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+        this.stopVoiceLoop();
+
+        if (this.currentReminderMedicine) {
+            this.apiCall(`/api/reminders/${this.currentReminderMedicine.id}`, 'DELETE')
+                .catch(err => console.error('Error clearing reminder:', err));
+        }
+
+        this.currentReminderMedicine = null;
+    }
+
+    startVoiceLoop(medicine) {
+        if (this.reminderLoopInterval) {
+            clearInterval(this.reminderLoopInterval);
+        }
+
+        this.playVoiceAlert(medicine);
+
+        this.reminderLoopInterval = setInterval(() => {
+            if (this.isReminderActive() && this.currentReminderMedicine?.id === medicine.id) {
+                this.playVoiceAlert(medicine);
+            } else {
+                clearInterval(this.reminderLoopInterval);
+                this.reminderLoopInterval = null;
+            }
+        }, 30000); // Repeat every 30 seconds
+    }
+
+    stopVoiceLoop() {
+        if (this.reminderLoopInterval) {
+            clearInterval(this.reminderLoopInterval);
+            this.reminderLoopInterval = null;
+        }
+        
+        // Stop any ongoing speech
+        if ('speechSynthesis' in window) {
+            speechSynthesis.cancel();
+        }
+    }
+
+    playVoiceAlert(medicine) {
+        if ('speechSynthesis' in window) {
+            // Cancel any ongoing speech
+            speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(
+                `Reminder: Time to take your ${medicine.name}, dosage: ${medicine.dosage}. Please take your medicine now.`
+            );
+            
+            utterance.rate = 0.9;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+            
+            speechSynthesis.speak(utterance);
+        }
+    }
 
     async checkLowStockMedicines() {
         try {
@@ -1478,148 +1568,149 @@ hideReminderModal() {
             console.error('Error checking low stock:', error);
         }
     }
-// ✅ Show dismissible banner for low stock medicines
-async showLowStockBanner() {
-    try {
-        const response = await this.apiCall('/api/low-stock', 'GET');
-        if (!response.success || response.medicines.length === 0) return;
 
-        // Prevent re-showing once dismissed for the day
-        // Always show banner on dashboard load
-const oldBanner = document.getElementById('lowStockBanner');
-if (oldBanner) oldBanner.remove();
+    // Show dismissible banner for low stock medicines
+    async showLowStockBanner() {
+        try {
+            const response = await this.apiCall('/api/low-stock', 'GET');
+            if (!response.success || response.medicines.length === 0) return;
 
+            // Remove existing banner
+            const oldBanner = document.getElementById('lowStockBanner');
+            if (oldBanner) oldBanner.remove();
 
-        const container = document.createElement('div');
-        container.id = 'lowStockBanner';
-        container.style.cssText = `
-            background: #fff8e1;
-            border: 1px solid #ffecb3;
-            border-radius: 10px;
-            padding: 12px 16px;
-            margin: 10px auto;
-            width: 90%;
-            max-width: 900px;
-            color: #8d6e00;
-            font-size: 15px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        `;
-
-        const medsList = response.medicines.map(m => `<strong>${m.name}</strong> (${m.stock} left)`).join(', ');
-        container.innerHTML = `
-            <div>
-                <i class="fas fa-exclamation-triangle" style="margin-right:8px;color:#f39c12;"></i>
-                <strong>Low Stock:</strong> ${medsList}
-            </div>
-            <button id="dismissLowStockBtn" style="
-                background: transparent;
-                border: none;
+            const container = document.createElement('div');
+            container.id = 'lowStockBanner';
+            container.style.cssText = `
+                background: #fff8e1;
+                border: 1px solid #ffecb3;
+                border-radius: 10px;
+                padding: 12px 16px;
+                margin: 10px auto;
+                width: 90%;
+                max-width: 900px;
                 color: #8d6e00;
-                font-weight: bold;
-                cursor: pointer;
-            ">Dismiss</button>
-        `;
-const dashboardSection = document.getElementById('dashboard-section');
-const titleElement = dashboardSection.querySelector('.section-title');
+                font-size: 15px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            `;
 
-if (titleElement) {
-    titleElement.insertAdjacentElement('afterend', container);
-} else {
-    dashboardSection.prepend(container);
-}
+            const medsList = response.medicines.map(m => `<strong>${m.name}</strong> (${m.stock} left)`).join(', ');
+            container.innerHTML = `
+                <div>
+                    <i class="fas fa-exclamation-triangle" style="margin-right:8px;color:#f39c12;"></i>
+                    <strong>Low Stock:</strong> ${medsList}
+                </div>
+                <button id="dismissLowStockBtn" style="
+                    background: transparent;
+                    border: none;
+                    color: #8d6e00;
+                    font-weight: bold;
+                    cursor: pointer;
+                ">Dismiss</button>
+            `;
 
+            const dashboardSection = document.getElementById('dashboard-section');
+            const titleElement = dashboardSection.querySelector('.section-title');
 
-        document.getElementById('dismissLowStockBtn').addEventListener('click', () => {
-            container.remove();
-            localStorage.setItem('lowStockDismissedToday', new Date().toDateString());
+            if (titleElement) {
+                titleElement.insertAdjacentElement('afterend', container);
+            } else {
+                dashboardSection.prepend(container);
+            }
+
+            document.getElementById('dismissLowStockBtn').addEventListener('click', () => {
+                container.remove();
+                localStorage.setItem('lowStockDismissedToday', new Date().toDateString());
+            });
+
+        } catch (err) {
+            console.error('Error showing low stock banner:', err);
+        }
+    }
+
+    // Show list of low stock medicines
+    async showLowStockList() {
+        const response = await this.apiCall('/api/low-stock', 'GET');
+        if (!response.success || response.medicines.length === 0) {
+            return this.showNotification('No low stock medicines found.', 'info');
+        }
+
+        let html = `<h3>Low Stock Medicines</h3><ul style="margin-top:10px;">`;
+        response.medicines.forEach(m => {
+            html += `<li><strong>${m.name}</strong> - ${m.stock} left</li>`;
         });
-
-    } catch (err) {
-        console.error('Error showing low stock banner:', err);
-    }
-}
-// ✅ Show list of low stock medicines
-async showLowStockList() {
-    const response = await this.apiCall('/api/low-stock', 'GET');
-    if (!response.success || response.medicines.length === 0) {
-        return this.showNotification('No low stock medicines found.', 'info');
+        html += `</ul>`;
+        this.showPopupModal(html);
     }
 
-    let html = `<h3>Low Stock Medicines</h3><ul style="margin-top:10px;">`;
-    response.medicines.forEach(m => {
-        html += `<li><strong>${m.name}</strong> - ${m.stock} left</li>`;
-    });
-    html += `</ul>`;
-    this.showPopupModal(html);
-}
+    // Show list of missed medicines
+    async showMissedList() {
+        const response = await this.apiCall('/api/missed', 'GET');
+        if (!response.success || response.medicines.length === 0) {
+            return this.showNotification('No missed medicines in last 12 hrs.', 'info');
+        }
 
-// ✅ Show list of missed medicines
-async showMissedList() {
-    const response = await this.apiCall('/api/missed', 'GET');
-    if (!response.success || response.medicines.length === 0) {
-        return this.showNotification('No missed medicines in last 12 hrs.', 'info');
+        let html = `<h3>Missed Medicines (12+ hrs late)</h3><ul style="margin-top:10px;">`;
+        response.medicines.forEach(m => {
+            html += `<li><strong>${m.name}</strong> - Scheduled at ${m.time}</li>`;
+        });
+        html += `</ul>`;
+        this.showPopupModal(html);
     }
 
-    let html = `<h3>Missed Medicines (12+ hrs late)</h3><ul style="margin-top:10px;">`;
-    response.medicines.forEach(m => {
-        html += `<li><strong>${m.name}</strong> - Scheduled at ${m.time}</li>`;
-    });
-    html += `</ul>`;
-    this.showPopupModal(html);
-}// ✅ Show list of taken medicines
-async showTakenList() {
-    const taken = this.medicines.filter(m => m.status === 'taken');
-    if (taken.length === 0) {
-        return this.showNotification('No medicines taken yet today.', 'info');
+    // Show list of taken medicines
+    async showTakenList() {
+        const taken = this.medicines.filter(m => m.status === 'taken');
+        if (taken.length === 0) {
+            return this.showNotification('No medicines taken yet today.', 'info');
+        }
+
+        let html = `<h3>Medicines Taken Today</h3><ul style="margin-top:10px;">`;
+        taken.forEach(m => {
+            html += `<li><strong>${m.name}</strong> - ${m.dosage} at ${m.time}</li>`;
+        });
+        html += `</ul>`;
+        this.showPopupModal(html);
     }
 
-    let html = `<h3>Medicines Taken Today</h3><ul style="margin-top:10px;">`;
-    taken.forEach(m => {
-        html += `<li><strong>${m.name}</strong> - ${m.dosage} at ${m.time}</li>`;
-    });
-    html += `</ul>`;
-    this.showPopupModal(html);
-}
+    // Show list of pending medicines
+    async showPendingList() {
+        const pending = this.medicines.filter(m => m.status === 'pending');
+        if (pending.length === 0) {
+            return this.showNotification('No pending medicines at the moment.', 'info');
+        }
 
-// ✅ Show list of pending medicines
-async showPendingList() {
-    const pending = this.medicines.filter(m => m.status === 'pending');
-    if (pending.length === 0) {
-        return this.showNotification('No pending medicines at the moment.', 'info');
+        let html = `<h3>Pending Medicines</h3><ul style="margin-top:10px;">`;
+        pending.forEach(m => {
+            html += `<li><strong>${m.name}</strong> - ${m.dosage} at ${m.time}</li>`;
+        });
+        html += `</ul>`;
+        this.showPopupModal(html);
     }
 
-    let html = `<h3>Pending Medicines</h3><ul style="margin-top:10px;">`;
-    pending.forEach(m => {
-        html += `<li><strong>${m.name}</strong> - ${m.dosage} at ${m.time}</li>`;
-    });
-    html += `</ul>`;
-    this.showPopupModal(html);
-}
-
-
-// ✅ Reusable popup modal
-showPopupModal(content) {
-    const modal = document.createElement('div');
-    modal.className = 'popup-overlay';
-    modal.style.cssText = `
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.4);
-        display: flex; justify-content: center; align-items: center;
-        z-index: 9999;
-    `;
-    modal.innerHTML = `
-        <div style="background: white; padding: 20px 25px; border-radius: 10px; max-width: 400px; text-align: center;">
-            ${content}
-            <br>
-            <button id="closePopupBtn" style="margin-top:15px;padding:8px 16px;border:none;background:#007bff;color:white;border-radius:6px;cursor:pointer;">Close</button>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    document.getElementById('closePopupBtn').onclick = () => modal.remove();
-}
+    // Reusable popup modal
+    showPopupModal(content) {
+        const modal = document.createElement('div');
+        modal.className = 'popup-overlay';
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 9999;
+        `;
+        modal.innerHTML = `
+            <div style="background: white; padding: 20px 25px; border-radius: 10px; max-width: 400px; text-align: center;">
+                ${content}
+                <br>
+                <button id="closePopupBtn" style="margin-top:15px;padding:8px 16px;border:none;background:#007bff;color:white;border-radius:6px;cursor:pointer;">Close</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.getElementById('closePopupBtn').onclick = () => modal.remove();
+    }
 
     resetDailyAlerts() {
         const now = new Date();
@@ -1652,16 +1743,13 @@ showPopupModal(content) {
         }
     }
 
-  showLowStockNotification(medicines) {
-    console.log('🟡 Low stock banner already handles notification.');
-}
-
+    showLowStockNotification(medicines) {
+        console.log('🟡 Low stock banner already handles notification.');
+    }
 
     isReminderActive() {
         return document.getElementById('reminderModal').classList.contains('active');
     }
-
-   
 
     async handleMedicineAction(action) {
         if (!this.currentReminderMedicine) return;
@@ -1706,9 +1794,8 @@ showPopupModal(content) {
 
             this.hideReminderModal();
             this.showNotification(`Reminder set for ${minutes} minutes from now`, 'success');
-            await this.loadMedicines(); // 🟢 Refresh dashboard
-await this.loadHistory();   // optional, to sync history table
-
+            await this.loadMedicines(); // Refresh dashboard
+            await this.loadHistory();   // Sync history table
             
         } catch (error) {
             console.error('Error rescheduling:', error);
@@ -1721,16 +1808,21 @@ await this.loadHistory();   // optional, to sync history table
     }
 
     // API Methods
- async apiCall(endpoint, method = 'GET', data = null, isFormData = false) {
+   async apiCall(endpoint, method = 'GET', data = null, isFormData = false) {
     const url = `http://localhost:5000${endpoint}`;
-    const headers = {
-        'user-id': this.currentUser?.id || ''
-    };
+    const user = JSON.parse(localStorage.getItem('meditrack_user'));
+    const headers = { 'User-ID': user?.id || '' };
 
     // Only add JSON header when not sending FormData
-    if (!isFormData) headers['Content-Type'] = 'application/json';
+    if (!isFormData && method !== 'GET') {
+        headers['Content-Type'] = 'application/json';
+    }
 
-    const options = { method, headers, mode: 'cors' };
+    const options = { 
+        method, 
+        headers,
+        mode: 'cors'
+    };
 
     if (data && (method === 'POST' || method === 'PUT')) {
         options.body = isFormData ? data : JSON.stringify(data);
@@ -1744,6 +1836,7 @@ await this.loadHistory();   // optional, to sync history table
 
     return await response.json();
 }
+
 
     // Enhanced Notification System
     showNotification(message, type = 'info') {
@@ -1806,39 +1899,39 @@ await this.loadHistory();   // optional, to sync history table
 const app = new MediTrackApp();
 
 // Utility functions for global access
-// ✅ Section Switcher (final working version)
+// Section Switcher (final working version)
 function switchContentSection(sectionId) {
-  console.log("Switching to:", sectionId);
+    console.log("Switching to:", sectionId);
 
-  // Find all content sections (inside .main-content)
-  const sections = document.querySelectorAll('.main-content .content-section');
-  sections.forEach(section => {
-    section.classList.remove('active');
-    section.style.display = 'none'; // ensure it's hidden
-  });
+    // Find all content sections (inside .main-content)
+    const sections = document.querySelectorAll('.main-content .content-section');
+    sections.forEach(section => {
+        section.classList.remove('active');
+        section.style.display = 'none'; // ensure it's hidden
+    });
 
-  // Activate the correct section
-  const targetSection = document.getElementById(sectionId);
-  if (targetSection) {
-    targetSection.classList.add('active');
-    targetSection.style.display = 'block'; // ensure it's visible
-  }
+    // Activate the correct section
+    const targetSection = document.getElementById(sectionId);
+    if (targetSection) {
+        targetSection.classList.add('active');
+        targetSection.style.display = 'block'; // ensure it's visible
+    }
 
-  // Update active sidebar highlight
-  const menuItems = document.querySelectorAll('.sidebar .menu-item');
-  menuItems.forEach(item => {
-    const target = item.getAttribute('data-target');
-    item.classList.toggle('active', target === sectionId);
-  });
+    // Update active sidebar highlight
+    const menuItems = document.querySelectorAll('.sidebar .menu-item');
+    menuItems.forEach(item => {
+        const target = item.getAttribute('data-target');
+        item.classList.toggle('active', target === sectionId);
+    });
 
-  // Optional: reload data if necessary
-  if (sectionId === 'dashboard-section') {
-    app.loadMedicines();
-  } else if (sectionId === 'history-section') {
-    app.loadHistory();
-  } else if (sectionId === 'profile-section') {
-    app.dashboardManager.loadProfileData();
-  }
+    // Optional: reload data if necessary
+    if (sectionId === 'dashboard-section') {
+        app.loadMedicines();
+    } else if (sectionId === 'history-section') {
+        app.loadHistory();
+    } else if (sectionId === 'profile-section') {
+        app.dashboardManager.loadProfileData();
+    }
 }
 
 // Frequency time inputs handler - FIXED
@@ -1876,43 +1969,42 @@ document.addEventListener('DOMContentLoaded', function() {
 window.app = app;
 window.switchContentSection = switchContentSection;
 window.toggleTimeInputs = toggleTimeInputs;
-// ✅ Global fix for file uploads
-// ✅ Unified upload click bindings — prevents multiple popups
+
+// Unified upload click bindings — prevents multiple popups
 (function setupUploadTriggers() {
-  const uploadMappings = [
-    ['medicinePhotoUploadArea', 'medicinePhotoInput'],
-    ['editMedicinePhotoUploadArea', 'editMedicinePhotoInput'],
-    ['voiceFileUploadArea', 'voiceFileInput'],
-    ['editVoiceFileUploadArea', 'editVoiceFileInput'],
-    ['profilePhotoUploadBtn', 'profilePhotoInput']
-  ];
+    const uploadMappings = [
+        ['medicinePhotoUploadArea', 'medicinePhotoInput'],
+        ['editMedicinePhotoUploadArea', 'editMedicinePhotoInput'],
+        ['voiceFileUploadArea', 'voiceFileInput'],
+        ['editVoiceFileUploadArea', 'editVoiceFileInput'],
+        ['profilePhotoUploadBtn', 'profilePhotoInput']
+    ];
 
-  uploadMappings.forEach(([triggerId, inputId]) => {
-    const trigger = document.getElementById(triggerId);
-    const input = document.getElementById(inputId);
-    if (trigger && input) {
-      trigger.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation(); // prevent bubbling to body listeners
-        input.click();
-      });
-    }
-  });
+    uploadMappings.forEach(([triggerId, inputId]) => {
+        const trigger = document.getElementById(triggerId);
+        const input = document.getElementById(inputId);
+        if (trigger && input) {
+            trigger.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation(); // prevent bubbling to body listeners
+                input.click();
+            });
+        }
+    });
 })();
-
 
 // Medicine actions
 app.markMedicineAsTaken = async function(medicineId) {
     try {
         // Disable button immediately to prevent multiple clicks
         const row = document.querySelector(`button[onclick*="${medicineId}"]`)?.closest('tr');
-if (row) {
-    const takenBtn = row.querySelector('.btn-success');
-    if (takenBtn) {
-        takenBtn.disabled = true;
-        takenBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-    }
-}
+        if (row) {
+            const takenBtn = row.querySelector('.btn-success');
+            if (takenBtn) {
+                takenBtn.disabled = true;
+                takenBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            }
+        }
 
         const notes = prompt('Add any notes (optional):') || '';
         
@@ -1933,11 +2025,10 @@ if (row) {
         app.showNotification('Failed to update medicine', 'error');
     } finally {
         // Re-enable buttons after processing
-    setTimeout(async () => {
-    await app.loadMedicines();
-    await app.loadHistory();
-}, 1000);
-
+        setTimeout(async () => {
+            await app.loadMedicines();
+            await app.loadHistory();
+        }, 1000);
     }
 };
 
@@ -1960,7 +2051,73 @@ app.deleteMedicine = async function(medicineId) {
         console.error('Error deleting medicine:', error);
         app.showNotification('Failed to delete medicine', 'error');
     }
-    // ✅ Reattach event listeners every time a section is opened
-
-
 };
+
+// // Click handlers for summary cards
+// app.showTakenList = () => app.showTakenList();
+// app.showPendingList = () => app.showPendingList();
+// app.showMissedList = () => app.showMissedList();
+// app.showLowStockList = () => app.showLowStockList();
+// Medicine actions
+app.markMedicineAsTaken = async function(medicineId) {
+    try {
+        // Disable button immediately to prevent multiple clicks
+        const row = document.querySelector(`button[onclick*="${medicineId}"]`)?.closest('tr');
+        if (row) {
+            const takenBtn = row.querySelector('.btn-success');
+            if (takenBtn) {
+                takenBtn.disabled = true;
+                takenBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            }
+        }
+
+        const notes = prompt('Add any notes (optional):') || '';
+        
+        const response = await app.apiCall(`/api/medicines/${medicineId}/taken`, 'POST', {
+            notes
+        });
+
+        if (response.success) {
+            app.showNotification('Medicine marked as taken! Stock updated.', 'success');
+            await app.loadMedicines();
+            await app.loadHistory();
+        } else {
+            app.showNotification(response.message, 'error');
+        }
+
+    } catch (error) {
+        console.error('Error marking medicine as taken:', error);
+        app.showNotification('Failed to update medicine', 'error');
+    } finally {
+        // Re-enable buttons after processing
+        setTimeout(async () => {
+            await app.loadMedicines();
+            await app.loadHistory();
+        }, 1000);
+    }
+};
+
+app.editMedicine = async function(medicineId) {
+    app.dashboardManager.loadMedicineForEdit(medicineId);
+};
+
+app.deleteMedicine = async function(medicineId) {
+    if (!confirm('Are you sure you want to delete this medicine? This action cannot be undone.')) {
+        return;
+    }
+
+    try {
+        await app.apiCall(`/api/medicines/${medicineId}`, 'DELETE');
+        
+        app.showNotification('Medicine deleted successfully!', 'success');
+        await app.loadMedicines();
+
+    } catch (error) {
+        console.error('Error deleting medicine:', error);
+        app.showNotification('Failed to delete medicine', 'error');
+    }
+};
+
+// FIXED: Proper click handlers for summary cards - remove circular references
+// These functions are already defined in the MediTrackApp class, so we don't need to reassign them
+// The onclick handlers in HTML will call the existing methods directly

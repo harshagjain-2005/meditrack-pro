@@ -1,50 +1,85 @@
-const { pool } = require('../config/database');
+const db = require('../config/database');
+
 
 class History {
-  static async create(historyData) {
-    const { user_id, medicine_id, medicine_name, dosage, scheduled_time, actual_time, status, notes } = historyData;
-    const [result] = await pool.execute(
-      `INSERT INTO history (user_id, medicine_id, medicine_name, dosage, scheduled_time, actual_time, status, notes) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  // ✅ Add a new history record
+  static async create({
+    user_id,
+    medicine_id,
+    medicine_name,
+    dosage,
+    scheduled_time,
+    actual_time,
+    status,
+    notes
+  }) {
+    await db.execute(
+      `INSERT INTO history 
+        (user_id, medicine_id, medicine_name, dosage, scheduled_time, actual_time, status, notes, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [user_id, medicine_id, medicine_name, dosage, scheduled_time, actual_time, status, notes]
     );
-    return result.insertId;
-  }
-  static async findTodayByMedicineId(medicineId) {
-    const [history] = await db.execute(
-      'SELECT * FROM history WHERE medicine_id = ? AND DATE(created_at) = CURDATE() AND status = "taken"',
-      [medicineId]
-    );
-    return history;
   }
 
-  static async findByUserId(userId, days = 30) {
-    const [rows] = await pool.execute(
+  // ✅ Fetch full history for a user (latest first)
+  static async findByUserId(user_id) {
+    const [rows] = await db.execute(
       `SELECT * FROM history 
-       WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
+       WHERE user_id = ? 
        ORDER BY created_at DESC`,
-      [userId, days]
+      [user_id]
     );
     return rows;
   }
 
-  static async getExportData(userId) {
-    const [rows] = await pool.execute(
-      `SELECT 
-         h.medicine_name,
-         h.dosage,
-         h.scheduled_time,
-         h.actual_time,
-         h.status,
-         h.notes,
-         h.created_at,
-         m.frequency,
-         m.stock
-       FROM history h
-       LEFT JOIN medicines m ON h.medicine_id = m.id
-       WHERE h.user_id = ?
-       ORDER BY h.created_at DESC`,
-      [userId]
+  // ✅ Fetch all records for today (used to prevent double marking)
+  static async findTodayByMedicineId(medicine_id) {
+    const [rows] = await db.execute(
+      `SELECT * FROM history 
+       WHERE medicine_id = ? 
+         AND DATE(created_at) = CURDATE()`,
+      [medicine_id]
+    );
+    return rows;
+  }
+
+  // ✅ Filter history by range & status (used in frontend filters)
+  static async filterHistory(user_id, range, status) {
+    let query = `SELECT * FROM history WHERE user_id = ?`;
+    const params = [user_id];
+
+    if (status && status !== 'all') {
+      query += ` AND status = ?`;
+      params.push(status);
+    }
+
+    if (range && range !== 'all') {
+      switch (range) {
+        case 'today':
+          query += ` AND DATE(created_at) = CURDATE()`;
+          break;
+        case 'week':
+          query += ` AND created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)`;
+          break;
+        case 'month':
+          query += ` AND created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)`;
+          break;
+      }
+    }
+
+    query += ` ORDER BY created_at DESC`;
+    const [rows] = await db.execute(query, params);
+    return rows;
+  }
+
+  // ✅ Export user history (for CSV download)
+  static async exportHistory(user_id) {
+    const [rows] = await db.execute(
+      `SELECT medicine_name, dosage, scheduled_time, actual_time, status, notes, created_at 
+       FROM history 
+       WHERE user_id = ? 
+       ORDER BY created_at DESC`,
+      [user_id]
     );
     return rows;
   }

@@ -1,80 +1,78 @@
-const { pool } = require('../config/database');
+const db = require('../config/db');
 
 class Medicine {
-  
-  static async create(medicineData) {
-    const { user_id, name, dosage, time, frequency, stock, refill_reminder, voice_alert_path } = medicineData;
-    const [result] = await pool.execute(
-      'INSERT INTO medicines (user_id, name, dosage, time, frequency, stock, refill_reminder, voice_alert_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [user_id, name, dosage, time, frequency, stock, refill_reminder, voice_alert_path]
+  // ✅ Create a new medicine record
+  static async create({
+    user_id,
+    name,
+    dosage,
+    time,
+    frequency,
+    stock,
+    refill_reminder,
+    voice_alert_type,
+    status
+  }) {
+    const [result] = await db.execute(
+      `INSERT INTO medicines 
+        (user_id, name, dosage, time, frequency, stock, refill_reminder, voice_alert_type, status, created_at) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [user_id, name, dosage, time, frequency, stock, refill_reminder, voice_alert_type, status]
     );
     return result.insertId;
   }
-  // models/Medicine.js
 
-  static async findByBaseName(userId, baseName) {
-    // Implementation to find all medicines with the same base name
-    const [medicines] = await db.execute(
-      'SELECT * FROM medicines WHERE user_id = ? AND (name = ? OR name LIKE ?)',
-      [userId, baseName, `${baseName} (Time %)`]
-    );
-    return medicines;
-  }
-
-  static async updateStock(medicineId, newStock) {
-    const [result] = await db.execute(
-      'UPDATE medicines SET stock = ? WHERE id = ?',
-      [newStock, medicineId]
-    );
-    return result;
-  }
-
-  static async updateStatus(medicineId, status) {
-    const [result] = await db.execute(
-      'UPDATE medicines SET status = ?, taken_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [status, medicineId]
-    );
-    return result;
-  }
-
-  static async findByUserId(userId) {
-    const [rows] = await pool.execute(
-      'SELECT * FROM medicines WHERE user_id = ? ORDER BY time',
-      [userId]
+  // ✅ Fetch all medicines for a specific user
+  static async findByUserId(user_id) {
+    const [rows] = await db.execute(
+      `SELECT * FROM medicines WHERE user_id = ? ORDER BY id DESC`,
+      [user_id]
     );
     return rows;
   }
 
+  // ✅ Fetch single medicine by ID
   static async findById(id) {
-    const [rows] = await pool.execute('SELECT * FROM medicines WHERE id = ?', [id]);
-    return rows[0];
+    const [rows] = await db.execute(`SELECT * FROM medicines WHERE id = ?`, [id]);
+    return rows.length > 0 ? rows[0] : null;
   }
 
-  static async updateStatus(id, status) {
-    await pool.execute(
-      'UPDATE medicines SET status = ? WHERE id = ?',
-      [status, id]
-    );
-  }
-
-  static async updateTakenTime(id) {
-    await pool.execute(
-      'UPDATE medicines SET status = "taken", taken_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [id]
-    );
-  }
-
-  static async delete(id) {
-    await pool.execute('DELETE FROM medicines WHERE id = ?', [id]);
-  }
-
-  static async getDueMedicines(userId) {
-    const [rows] = await pool.execute(
+  // ✅ Find all medicine entries with the same base name (for multiple times)
+  static async findByBaseName(user_id, baseName) {
+    const [rows] = await db.execute(
       `SELECT * FROM medicines 
-       WHERE user_id = ? AND status = 'pending' 
-       AND TIME(time) <= TIME(CURRENT_TIME()) 
-       ORDER BY time`,
-      [userId]
+       WHERE user_id = ? 
+         AND (name = ? OR name LIKE ?)
+       ORDER BY id ASC`,
+      [user_id, baseName, `${baseName} (Time %)`]
+    );
+    return rows;
+  }
+
+  // ✅ Update stock for a specific medicine
+  static async updateStock(id, newStock) {
+    await db.execute(`UPDATE medicines SET stock = ? WHERE id = ?`, [newStock, id]);
+  }
+
+  // ✅ Update status (e.g., pending, taken, missed)
+  static async updateStatus(id, status) {
+    await db.execute(`UPDATE medicines SET status = ? WHERE id = ?`, [status, id]);
+  }
+
+  // ✅ Delete a specific medicine
+  static async delete(id) {
+    await db.execute(`DELETE FROM medicines WHERE id = ?`, [id]);
+  }
+
+  // ✅ Fetch reminders due for a user (optional, used in reminder checkers)
+  static async findDueReminders(user_id) {
+    const [rows] = await db.execute(
+      `SELECT * FROM medicines 
+       WHERE user_id = ? 
+         AND status = 'pending'
+         AND TIME_FORMAT(time, '%H:%i') <= TIME_FORMAT(NOW(), '%H:%i') 
+         AND DATE(created_at) = CURDATE()`,
+      [user_id]
     );
     return rows;
   }

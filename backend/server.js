@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const mysql = require('mysql2/promise');
+const historyRoutes = require('./routes/history');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -71,6 +72,10 @@ async function createTables(db) {
             medicine_photo VARCHAR(255),
             status VARCHAR(50) DEFAULT 'pending',
             taken_at TIMESTAMP NULL,
+            duration_type VARCHAR(50) DEFAULT 'lifetime',
+            duration_days INT,
+            start_date DATE,
+            end_date DATE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
@@ -124,7 +129,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 // ✅ Serve uploaded files publicly
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
+app.use('/api/history', historyRoutes);
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -252,22 +257,14 @@ setInterval(checkReminders, 30000);
 // ✅ Also run once immediately at startup
 setTimeout(checkReminders, 1000);
 
-// ✅ Separate cleanup task (runs once per 24h)
-setInterval(async () => {
-    try {
-        const [expired] = await db.execute(
-            'SELECT id, name FROM medicines WHERE end_date IS NOT NULL AND end_date < CURDATE()'
-        );
-        if (expired.length > 0) {
-            const ids = expired.map(x => x.id);
-            await db.execute('DELETE FROM medicines WHERE id IN (?)', [ids]);
-            console.log(`🗑️ Deleted ${ids.length} expired medicines.`);
-        }
-    } catch (err) {
-        console.error('Cleanup error:', err);
-    }
-}, 24 * 60 * 60 * 1000); // Every 24 hours
-
+// Health check
+app.get('/api/health', (req, res) => {
+    res.json({ 
+        success: true, 
+        message: 'MediTrack Pro API is running!',
+        timestamp: new Date().toISOString()
+    });
+});
 
 // Get active reminders - FIXED
 app.get('/api/reminders', async (req, res) => {
@@ -829,20 +826,18 @@ app.post('/api/medicines/:id/taken', async (req, res) => {
         const newStock = Math.max(0, med.stock - dosageInt);
 
         // ✅ Update all medicines with the same name for this user
-// ✅ 1. Reduce stock for all same medicines (shared stock)
-await db.execute(`
-    UPDATE medicines 
-    SET stock = ? 
-    WHERE user_id = ? AND name LIKE ?
-`, [newStock, userId, `${med.name.split(' ')[0]}%`]);
+        await db.execute(`
+            UPDATE medicines 
+            SET stock = ? 
+            WHERE user_id = ? AND name LIKE ?
+        `, [newStock, userId, `${med.name.split(' ')[0]}%`]);
 
-// ✅ 2. Mark only the current medicine as "taken"
-await db.execute(`
-    UPDATE medicines 
-    SET status = "taken", taken_at = CURRENT_TIMESTAMP 
-    WHERE id = ? AND user_id = ?
-`, [medicineId, userId]);
-
+        // ✅ Mark only the current medicine as "taken"
+        await db.execute(`
+            UPDATE medicines 
+            SET status = "taken", taken_at = CURRENT_TIMESTAMP 
+            WHERE id = ? AND user_id = ?
+        `, [medicineId, userId]);
 
         // ✅ add to history
         const hid = Date.now().toString() + Math.random().toString(36).substr(2, 8);
@@ -1150,9 +1145,10 @@ app.get('/api/export/history', async (req, res) => {
             [userId]
         );
         
-        let csvContent = 'Medicine,Dosage,Scheduled Time,Actual Time,Status,Notes\n';
+        let csvContent = 'Date,Medicine,Dosage,Scheduled Time,Actual Time,Status,Notes\n';
         
         history.forEach(record => {
+            const date = new Date(record.created_at).toLocaleDateString();
             const actualTime = record.actual_time && record.actual_time !== 'null' ? 
                 record.actual_time : '-';
             
@@ -1161,7 +1157,7 @@ app.get('/api/export/history', async (req, res) => {
                 return `"${String(str).replace(/"/g, '""')}"`;
             };
             
-            csvContent += `${escapeCSV(record.medicine_name)},${escapeCSV(record.dosage)},${escapeCSV(record.scheduled_time)},${escapeCSV(actualTime)},${escapeCSV(record.status)},${escapeCSV(record.notes)}\n`;
+            csvContent += `${escapeCSV(date)},${escapeCSV(record.medicine_name)},${escapeCSV(record.dosage)},${escapeCSV(record.scheduled_time)},${escapeCSV(actualTime)},${escapeCSV(record.status)},${escapeCSV(record.notes)}\n`;
         });
 
         res.setHeader('Content-Type', 'text/csv');
@@ -1251,6 +1247,7 @@ app.use((error, req, res, next) => {
         message: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
 });
+
 // 🧹 Daily cleanup for expired medicines
 setInterval(async () => {
   try {
@@ -1274,12 +1271,11 @@ setInterval(async () => {
   }
 }, 24 * 60 * 60 * 1000); // every 24h
 
-
 // Start server
 app.listen(PORT, () => {
     console.log(`\n🚀 MediTrack Pro server running on http://localhost:${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  //  console.log(`🌐 Frontend: http://localhost:${PORT}/`);
+    console.log(`🌐 Frontend: http://localhost:${PORT}/`);
     console.log(`💾 Database: MySQL connected`);
-    //console.log(`⏰ Reminder checker running every 30 seconds`);
+    console.log(`⏰ Reminder checker running every 30 seconds`);
 });

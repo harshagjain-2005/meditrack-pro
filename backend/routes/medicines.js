@@ -1,10 +1,8 @@
 const express = require('express');
 const MedicineController = require('../controllers/medicineController');
-const authMiddleware = require('../middleware/auth');
 const router = express.Router();
 
-router.use(authMiddleware);
-
+// ✅ Non-JWT version — no auth middleware, just User-ID header
 router.get('/', MedicineController.getMedicines);
 router.post('/', MedicineController.addMedicine);
 router.post('/:medicineId/taken', MedicineController.markAsTaken);
