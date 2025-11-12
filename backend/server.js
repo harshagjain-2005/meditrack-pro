@@ -5,15 +5,15 @@ const fs = require('fs');
 const multer = require('multer');
 const mysql = require('mysql2/promise');
 const historyRoutes = require('./routes/history');
-
 const app = express();
+app.use(express.json());
 const PORT = process.env.PORT || 5000;
 
 // MySQL Database Configuration
 const dbConfig = {
     host: 'localhost',
     user: 'root',
-    password: '12345678',
+    password: 'harsha123',
     database: 'meditrack_db'
 };
 
@@ -125,7 +125,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'User-ID']
 }));
 
-app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 // ✅ Serve uploaded files publicly
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -393,6 +392,7 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 app.post('/api/auth/login', async (req, res) => {
+    
     try {
         const { email, password } = req.body;
 
@@ -402,40 +402,39 @@ app.post('/api/auth/login', async (req, res) => {
                 message: 'Email and password are required'
             });
         }
-
-        const [users] = await db.execute(
+        const data = await db.execute(
             'SELECT * FROM users WHERE email = ?',
             [email]
         );
+        console.log("data:", data[0][0]);
+      const users = data[0][0];
 
-        if (users.length === 0) {
+        if (!users) {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials'
             });
         }
 
-        const user = users[0];
-
-        if (user.password !== password) {
+        if (users.password !== password) {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials'
             });
         }
-
+console.log("here");
         res.json({
             success: true,
             message: 'Login successful',
             user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                age: user.age,
-                medical_history: user.medical_history,
-                guardian_name: user.guardian_name,
-                guardian_contact: user.guardian_contact,
-                profile_photo: user.profile_photo
+                id: users.id,
+                name: users.name,
+                email: users.email,
+                age: users.age,
+                medical_history: users.medical_history,
+                guardian_name: users.guardian_name,
+                guardian_contact: users.guardian_contact,
+                profile_photo: users.profile_photo
             }
         });
 
